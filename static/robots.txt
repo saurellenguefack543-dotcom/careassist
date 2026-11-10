@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /espace
+Disallow: /api/
+Sitemap: https://getcareassist.com/sitemap.xml

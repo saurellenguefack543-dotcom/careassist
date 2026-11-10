@@ -1,0 +1,20 @@
+services:
+  careassist:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false   # copiez .env.example en .env pour configurer
+    environment:
+      DB_PATH: /app/data/careassist.db
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+  # Optionnel : LLM local open-source (décommentez, puis OPENAI_BASE_URL=http://ollama:11434/v1)
+  # ollama:
+  #   image: ollama/ollama
+  #   ports: ["11434:11434"]
+  #   volumes: ["ollama:/root/.ollama"]
+# volumes:
+#   ollama:

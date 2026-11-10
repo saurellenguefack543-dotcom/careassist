@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Espace cabinet — CareAssist</title>
+  <meta name="description" content="Espace privé du cabinet : patients, rendez-vous, appels, rappels automatiques et sauvegardes." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css?v=5" />
+  <link rel="stylesheet" href="espace.css?v=2" />
+</head>
+<body class="espace">
+<a class="skip" href="#main">Aller au contenu</a>
+
+<!-- ============ connexion ============ -->
+<section id="login-view" class="login-wrap" hidden>
+  <div class="login-card">
+    <a href="/" class="logo"><span class="logo-mark"><svg class="i" data-icon="phone"></svg></span> CareAssist</a>
+    <h1>Espace cabinet</h1>
+    <p class="small">Accès réservé au personnel du cabinet. Données hébergées de façon isolée par cabinet.</p>
+    <form id="login-form" novalidate>
+      <label for="l-email">E-mail professionnel</label>
+      <input id="l-email" name="email" type="email" autocomplete="username" required />
+      <label for="l-pw">Mot de passe</label>
+      <input id="l-pw" name="password" type="password" autocomplete="current-password" required />
+      <button class="btn btn-primary btn-block" type="submit">Se connecter</button>
+      <p id="login-msg" class="form-msg" role="alert"></p>
+    </form>
+    <details class="signup">
+      <summary>Créer l'espace de mon cabinet</summary>
+      <form id="signup-form" novalidate>
+        <label for="s-practice">Nom du cabinet</label><input id="s-practice" name="practice_name" required minlength="2" />
+        <div class="row2">
+          <div><label for="s-spec">Spécialité</label><select id="s-spec" name="specialty"></select></div>
+          <div><label for="s-country">Pays</label><select id="s-country" name="country"></select></div>
+        </div>
+        <label for="s-name">Votre nom</label><input id="s-name" name="name" required minlength="2" autocomplete="name" />
+        <label for="s-email">E-mail</label><input id="s-email" name="email" type="email" required autocomplete="email" />
+        <label for="s-pw">Mot de passe (10 caractères min., lettres et chiffres)</label>
+        <input id="s-pw" name="password" type="password" required minlength="10" autocomplete="new-password" />
+        <button class="btn btn-outline btn-block" type="submit">Créer mon espace</button>
+        <p id="signup-msg" class="form-msg" role="alert"></p>
+      </form>
+    </details>
+  </div>
+</section>
+
+<!-- ============ application ============ -->
+<div id="app-view" class="app" hidden>
+  <aside class="side" aria-label="Navigation de l'espace cabinet">
+    <a href="/" class="logo"><span class="logo-mark"><svg class="i" data-icon="phone"></svg></span> CareAssist</a>
+    <div class="practice-chip"><strong id="p-name"></strong><span id="p-meta"></span></div>
+    <nav id="side-nav">
+      <button data-view="dashboard" class="active"><svg class="i" data-icon="home"></svg>Tableau de bord</button>
+      <button data-view="agenda"><svg class="i" data-icon="calendar"></svg>Rendez-vous</button>
+      <button data-view="patients"><svg class="i" data-icon="users"></svg>Patients</button>
+      <button data-view="calls"><svg class="i" data-icon="phone"></svg>Appels &amp; messages</button>
+      <button data-view="notifications"><svg class="i" data-icon="bell"></svg>Notifications</button>
+      <button data-view="team"><svg class="i" data-icon="clock"></svg>Équipe &amp; horaires</button>
+      <button data-view="settings" data-role="owner"><svg class="i" data-icon="settings"></svg>Paramètres</button>
+      <button data-view="backup" data-role="owner secretary"><svg class="i" data-icon="database"></svg>Export &amp; sauvegardes</button>
+    </nav>
+    <div class="side-foot">
+      <span id="u-name"></span>
+      <button id="logout" class="btn-ghost small"><svg class="i" data-icon="logout"></svg>Déconnexion</button>
+    </div>
+  </aside>
+  <main id="main" class="main" tabindex="-1">
+    <header class="main-head">
+      <h1 id="view-title">Tableau de bord</h1>
+      <div id="view-actions"></div>
+    </header>
+    <div id="view"></div>
+  </main>
+</div>
+
+<dialog id="modal" aria-labelledby="modal-title">
+  <form method="dialog" class="modal-close"><button aria-label="Fermer"><svg class="i" data-icon="x"></svg></button></form>
+  <h2 id="modal-title"></h2>
+  <div id="modal-body"></div>
+</dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="icons.js?v=4"></script>
+<script src="espace.js?v=2"></script>
+</body>
+</html>

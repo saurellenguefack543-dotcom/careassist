@@ -1,0 +1,80 @@
+# Déploiement en un clic sur Render (https://render.com/docs/blueprint-spec)
+# 1. Poussez ce dépôt sur GitHub  2. Render > New > Blueprint > sélectionnez le dépôt  3. Renseignez les variables « sync: false ».
+#
+# IMPORTANT — persistance SQLite :
+#  - Plan « free » : PAS de disque persistant -> la base est recréée à chaque redéploiement/redémarrage
+#    (parfait pour une démo, inacceptable pour des données patients).
+#  - Production : passez le service en plan payant (starter+) et décommentez le bloc `disk` ci-dessous
+#    (DB_PATH et BACKUP_DIR pointent alors sur le disque), ou migrez vers PostgreSQL managé (voir README).
+#  - Données de santé en France : hébergement certifié HDS obligatoire (Render n'est pas certifié HDS).
+services:
+  - type: web
+    name: careassist
+    runtime: python
+    plan: free
+    region: frankfurt
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: PUBLIC_BASE_URL
+        value: https://getcareassist.com
+      - key: ADMIN_TOKEN
+        generateValue: true          # jeton super-admin aléatoire (visible dans le dashboard Render)
+      - key: VOIP_WEBHOOK_TOKEN
+        generateValue: true
+      - key: TRUST_PROXY
+        value: "1"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: TWILIO_VALIDATE
+        value: "true"
+      - key: DB_PATH
+        value: data/careassist.db    # avec disque : /var/data/careassist.db
+      - key: BACKUP_DIR
+        value: data/backups          # avec disque : /var/data/backups
+      - key: BACKUP_KEEP
+        value: "7"
+      - key: SCHEDULER_ENABLED
+        value: "1"
+      - key: SEED_DEMO
+        value: "1"                   # mettre "0" en production réelle
+      - key: GROQ_API_KEY
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM
+        sync: false
+      - key: VONAGE_API_KEY
+        sync: false
+      - key: VONAGE_API_SECRET
+        sync: false
+      - key: AT_USERNAME
+        sync: false
+      - key: AT_API_KEY
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: FLW_SECRET_KEY
+        sync: false
+      - key: FLW_SECRET_HASH
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+    # disk:                          # plans payants uniquement
+    #   name: careassist-data
+    #   mountPath: /var/data
+    #   sizeGB: 1
