@@ -4,9 +4,9 @@ Site : **https://getcareassist.com** · Contact : **contact@getcareassist.com**
 
 > **Ne manquez plus jamais un rendez-vous. Votre réceptionniste IA 24/7 pour les professionnels de santé.**
 
-CareAssist est un MVP de SaaS de réceptionniste IA (téléphone + chat) pour cabinets de santé :
+CareAssist est un MVP de SaaS de réceptionniste IA (téléphone + chat) que j'ai conçu pour les cabinets de santé :
 **dentistes, psychologues / psychothérapeutes, ophtalmologues, médecins généralistes, kinésithérapeutes**.
-Il décroche les appels, prend / déplace / annule les rendez-vous, répond aux questions courantes
+L'assistante décroche les appels, prend, déplace ou annule les rendez-vous, répond aux questions courantes
 (horaires, accès, carte Vitale, tiers payant, mutuelle, C2S…) et **trie les urgences selon la spécialité**
 (créneau prioritaire du jour, orientation vers le médecin, ou numéros d'urgence du pays immédiatement).
 
@@ -17,28 +17,45 @@ patient + praticien, un **numéro VoIP cloud** (Twilio, Vonage, Africa's Talking
 Offre : **un seul plan, appels illimités pour un cabinet solo ou un petit groupe** — 299 €/mois en Europe (référence),
 tarifs régionaux en devise locale pour l'Afrique (prix indicatifs à valider, voir [Tarifs régionaux et paiements](#tarifs-régionaux-et-paiements)).
 
+## Pourquoi ce projet
+
+J'ai conçu CareAssist pour deux raisons, qui se recoupent.
+
+La première est métier. Un cabinet qui ne décroche pas, en soirée ou le week-end, perd des rendez-vous. Je voulais
+un outil utilisable en France comme en Afrique, avec un tarif dans la monnaie du pays, le mobile money là où la
+carte n'est pas le moyen habituel, et des numéros d'urgence qui correspondent vraiment au pays du cabinet.
+
+La seconde est technique. Je me destine aux métiers des systèmes, des réseaux et de la cybersécurité. Ce projet
+m'a permis de travailler, de bout en bout, sur ce qui m'intéresse : l'isolation des données entre cabinets,
+l'authentification des webhooks, les en-têtes HTTP et la limitation de débit, les sauvegardes, le RGPD
+(export et suppression), et un déploiement reproductible (Docker, Render). Ce dépôt présente l'état actuel
+du MVP, y compris ce que je n'ai pas encore traité.
+
 ---
 
 ## Sommaire
-1. [Contenu du projet](#contenu-du-projet)
-2. [Architecture](#architecture)
-3. [Démarrage rapide](#démarrage-rapide)
-4. [Tester](#tester)
-5. [Système de spécialités](#système-de-spécialités)
-6. [Brancher un LLM (Groq, OpenAI, Ollama)](#brancher-un-llm)
-7. [Téléphonie : Twilio](#téléphonie--twilio)
-8. [Téléphonie : Vapi](#téléphonie--vapi)
-9. [Alternatives open-source](#alternatives-open-source)
-10. [Espace cabinet (multi-tenant) et comptes de démo](#espace-cabinet-multi-tenant)
-11. [Adaptation par pays et zone](#adaptation-par-pays-et-zone)
-12. [VoIP cloud : appels, SMS, WhatsApp](#voip-cloud--appels-sms-whatsapp)
-13. [Notifications et rappels](#notifications-et-rappels)
-14. [Sauvegardes et exports](#sauvegardes-et-exports)
-15. [Sécurité et RGPD](#sécurité-et-rgpd)
-16. [Déploiement (Render, Docker)](#déploiement)
-17. [Tarifs régionaux et paiements](#tarifs-régionaux-et-paiements)
-18. [Go-to-market et monétisation](#go-to-market-et-monétisation)
-19. [Limites du MVP](#limites-du-mvp)
+1. [Pourquoi ce projet](#pourquoi-ce-projet)
+2. [Contenu du projet](#contenu-du-projet)
+3. [Architecture](#architecture)
+4. [Points techniques que j'ai travaillés](#points-techniques-que-jai-travaillés)
+5. [Démarrage rapide](#démarrage-rapide)
+6. [Tester](#tester)
+7. [Système de spécialités](#système-de-spécialités)
+8. [Brancher un LLM (Groq, OpenAI, Ollama)](#brancher-un-llm)
+9. [Téléphonie : Twilio](#téléphonie--twilio)
+10. [Téléphonie : Vapi](#téléphonie--vapi)
+11. [Alternatives open-source](#alternatives-open-source)
+12. [Espace cabinet (multi-tenant) et comptes de démo](#espace-cabinet-multi-tenant)
+13. [Adaptation par pays et zone](#adaptation-par-pays-et-zone)
+14. [VoIP cloud : appels, SMS, WhatsApp](#voip-cloud--appels-sms-whatsapp)
+15. [Notifications et rappels](#notifications-et-rappels)
+16. [Sauvegardes et exports](#sauvegardes-et-exports)
+17. [Sécurité et RGPD](#sécurité-et-rgpd)
+18. [Déploiement (Render, Docker)](#déploiement)
+19. [Tarifs régionaux et paiements](#tarifs-régionaux-et-paiements)
+20. [Pistes de commercialisation](#pistes-de-commercialisation)
+21. [Limites du MVP](#limites-du-mvp)
+22. [Auteure](#auteure)
 
 ---
 
@@ -104,13 +121,25 @@ careassist-mvp/
                                     SQLite : conversations, messages, urgences, leads ─► /admin
 ```
 
-Choix clés :
-- **Urgences déterministes** : jamais confiées au LLM ; testées unitairement pour chaque spécialité.
-- **Transactions déterministes** : le LLM ne peut ni inventer un créneau ni confirmer un RDV.
-- **Zéro clé nécessaire** : sans LLM, le moteur de règles assure toute la démo. Avec une clé, le LLM
-  rend les réponses ouvertes plus naturelles, avec repli automatique en cas d'erreur.
-- **Multi-cabinets** : chaque cabinet (table `practices`) a une spécialité ; l'API prend `practice`
-  (slug, id ou spécialité), Twilio/Vapi prennent `?practice=...` dans l'URL du webhook.
+Mes choix techniques :
+
+- **Urgences déterministes.** Je ne les confie jamais au LLM. Chaque spécialité a ses règles, couvertes par des tests unitaires.
+- **Transactions déterministes.** Le LLM ne peut ni inventer un créneau ni confirmer un rendez-vous.
+- **Fonctionnement sans clé.** Sans LLM, le moteur de règles assure toute la démo. Avec une clé, le modèle rend les réponses ouvertes plus naturelles, avec un repli automatique en cas d'erreur.
+- **Multi-cabinets.** Chaque cabinet (table `practices`) a une spécialité ; l'API prend `practice` (slug, id ou spécialité), Twilio et Vapi prennent `?practice=...` dans l'URL du webhook.
+
+## Points techniques que j'ai travaillés
+
+Ce sont les sujets sur lesquels j'ai le plus insisté, côté sécurité et infrastructure. Le détail se trouve
+plus bas, notamment dans [Sécurité et RGPD](#sécurité-et-rgpd) et [Déploiement](#déploiement).
+
+- **Isolation multi-tenant et rôles.** Chaque requête de l'espace cabinet est filtrée par `practice_id` côté serveur (issu de la session, jamais du client). Trois rôles : titulaire, praticien, secrétariat, avec des droits distincts. Des tests vérifient qu'un cabinet ne peut pas lire les données d'un autre.
+- **Authentification et CSRF.** Mots de passe bcrypt, sessions serveur (cookie HttpOnly, SameSite, Secure en HTTPS ; seul un hash SHA-256 du jeton est stocké), protection CSRF en double-submit (cookie `ca_csrf` + en-tête `X-CSRF-Token`), limitation des tentatives de connexion par IP et par e-mail.
+- **En-têtes de sécurité et limitation de débit.** Content-Security-Policy, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS en HTTPS, CORS restreint. Rate limiting en mémoire sur les routes exposées (connexion, inscription, chat, leads, paiement, webhooks, API espace).
+- **Vérification des signatures de webhooks.** Stripe, Paystack, Flutterwave et Twilio. Jeton partagé pour Vonage et Africa's Talking (`VOIP_WEBHOOK_TOKEN`), secret optionnel pour Vapi. Sans secret configuré, seuls les événements visant un abonnement de démo sont acceptés.
+- **RGPD.** Export et suppression (anonymisation) d'un patient, export du cabinet, consentement aux messages et mot-clé STOP, **journal d'audit** (identifiants uniquement, aucune donnée de santé), purge automatique des journaux techniques.
+- **Sauvegardes.** Copie SQLite à chaud, rotation, restauration avec conservation d'une copie de la base précédente. Fichiers en `chmod 600`.
+- **Déploiement.** `Dockerfile` et `docker-compose.yml` (contrôle de santé sur `/health`), Blueprint Render (`render.yaml`), Procfile. J'ai documenté les limites du plan gratuit (pas de disque persistant, mise en veille) et l'obligation, en France, d'un hébergeur certifié HDS pour des données de santé réelles.
 
 ## Démarrage rapide
 
@@ -125,7 +154,8 @@ cp .env.example .env                 # facultatif : tout fonctionne sans clé
 uvicorn app.main:app --reload --port 8000
 ```
 
-Puis ouvrez :
+Puis ouvrir :
+
 - http://localhost:8000/ : landing page + démo interactive
 - http://localhost:8000/espace : espace cabinet (comptes de démo ci-dessous)
 - http://localhost:8000/admin : super-admin (définir `ADMIN_TOKEN`, ou `ADMIN_OPEN=1` en local)
@@ -189,8 +219,8 @@ curl -s -b jar 'localhost:8000/api/espace/export?format=csv' -o export.zip
 ```
 
 ### Dans le navigateur
-Section **Démo** : choisissez une spécialité, cliquez sur un exemple (réservation, remboursement,
-urgence) ou tapez librement. Les badges « Urgence vitale », « Urgence prioritaire » et « Rendez-vous
+Section **Démo** : choisir une spécialité, cliquer sur un exemple (réservation, remboursement,
+urgence) ou taper librement. Les badges « Urgence vitale », « Urgence prioritaire » et « Rendez-vous
 confirmé » s'affichent selon la réponse. Le résultat apparaît en direct dans `/admin`.
 
 ## Système de spécialités
@@ -212,18 +242,18 @@ Chaque spécialité définit aussi : types de rendez-vous et durées, notes assu
 discours sur les tarifs (jamais de prix inventé), FAQ spécifiques, conseils d'attente, **surcouche du
 prompt système**, exemples de démo et préréglage du calculateur ROI.
 
-**Ajouter une spécialité** (ex. orthophoniste, sage-femme, dermatologue) : ajoutez une entrée dans
-`SPECIALTIES`, un cabinet dans `seed.PRACTICES`, ajoutez la spécialité dans `static/app.js` (`SPECS`) et des
+**Ajouter une spécialité** (ex. orthophoniste, sage-femme, dermatologue) : une entrée dans
+`SPECIALTIES`, un cabinet dans `seed.PRACTICES`, la spécialité dans `static/app.js` (`SPECS`) et des
 cas dans `tests/test_emergency.py`.
 
-> Les informations de remboursement sont volontairement génériques : faites-les valider et
-> personnaliser par chaque cabinet avant la mise en production.
+> Les informations de remboursement sont volontairement génériques : elles doivent être validées et
+> personnalisées par chaque cabinet avant une mise en production.
 
 ## Brancher un LLM
 
 Sans configuration, le moteur de règles répond à tout. Pour des réponses ouvertes plus naturelles :
 
-**Groq** (rapide, offre gratuite pour tester) : créez une clé sur https://console.groq.com puis dans `.env` :
+**Groq** (rapide, offre gratuite pour tester) : créer une clé sur https://console.groq.com puis, dans `.env` :
 ```
 GROQ_API_KEY=gsk_...
 GROQ_MODEL=llama-3.3-70b-versatile
@@ -234,23 +264,23 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o-mini
 ```
-Vérifiez avec `curl localhost:8000/health` (`"llm": "groq"` ou `"openai-compatible"`). Le champ `engine`
+Vérifier avec `curl localhost:8000/health` (`"llm": "groq"` ou `"openai-compatible"`). Le champ `engine`
 de chaque réponse `/api/chat` indique `rules` ou `llm:<fournisseur>`. Le prompt utilisé est visible
 via `GET /api/prompt?practice=<spécialité>`.
 
 ## Téléphonie : Twilio
 
-1. Lancez le serveur puis exposez-le : `ngrok http 8000` → `https://xxxx.ngrok-free.app`.
+1. Lancer le serveur puis l'exposer : `ngrok http 8000` → `https://xxxx.ngrok-free.app`.
 2. Console Twilio → *Phone Numbers* → votre numéro → *Voice Configuration* →
    **A call comes in** : Webhook `https://xxxx.ngrok-free.app/twilio/voice?practice=dentiste`, méthode **HTTP POST**.
-3. Appelez le numéro. La boucle est : `<Gather input="speech" language="fr-FR">` → reconnaissance
+3. Appeler le numéro. La boucle est : `<Gather input="speech" language="fr-FR">` → reconnaissance
    vocale Twilio → moteur CareAssist → `<Say voice="Polly.Lea">` → nouveau `<Gather>`.
 4. Options `.env` : `HUMAN_TRANSFER_NUMBER=+331...` (transfert `<Dial>` sur demande d'humain ou urgence
    vitale), `TWILIO_VOICE`, et en production `TWILIO_VALIDATE=true` + `TWILIO_AUTH_TOKEN` +
    `PUBLIC_BASE_URL` (vérification de la signature `X-Twilio-Signature`).
 5. Côté cabinet : renvoi d'appel (sur non-réponse ou permanent) de la ligne existante vers le numéro Twilio.
 
-Un numéro français Twilio nécessite un dossier réglementaire (justificatif d'adresse) : comptez quelques jours.
+Un numéro français Twilio nécessite un dossier réglementaire (justificatif d'adresse) : compter quelques jours.
 
 ## Téléphonie : Vapi
 
@@ -259,10 +289,10 @@ Vapi gère la voix (STT, TTS, interruptions) ; CareAssist fournit l'intelligence
 **A. Custom LLM (recommandé)** : Assistant → *Model* → *Custom LLM* →
 URL `https://xxxx.ngrok-free.app/vapi?practice=dentiste` (Vapi appelle `/vapi/chat/completions`,
 format OpenAI, streaming SSE supporté). Urgences et réservations passent par le moteur déterministe.
-Choisissez un transcriber et une voix français (ex. Deepgram `fr`, voix ElevenLabs / Azure fr-FR).
+Choisir un transcriber et une voix français (ex. Deepgram `fr`, voix ElevenLabs / Azure fr-FR).
 
-**B. Outils (function calling)** : gardez le LLM de Vapi, collez le prompt de `GET /api/prompt?practice=...`,
-réglez la *Server URL* sur `https://xxxx.ngrok-free.app/vapi/webhook?practice=dentiste` et déclarez les outils :
+**B. Outils (function calling)** : garder le LLM de Vapi, coller le prompt de `GET /api/prompt?practice=...`,
+régler la *Server URL* sur `https://xxxx.ngrok-free.app/vapi/webhook?practice=dentiste` et déclarer les outils :
 - `check_availability` `{date?: "YYYY-MM-DD", period?: "matin"|"apres-midi"|"soir", limit?: int}`
 - `book_appointment` `{slot_id: int, patient_name: string, phone: string, reason?: string, urgent?: bool}`
 - `cancel_appointment` `{phone: string}`
@@ -270,8 +300,8 @@ réglez la *Server URL* sur `https://xxxx.ngrok-free.app/vapi/webhook?practice=d
 
 Le webhook répond au format `{"results":[{"toolCallId": "...", "result": "..."}]}` et accepte aussi
 l'ancien format `function-call` ; `end-of-call-report` enregistre le résumé dans le journal.
-Secret optionnel : `VAPI_SECRET` (en-tête `x-vapi-secret`). *Ce stub suit le format documenté par Vapi
-au moment de l'écriture ; vérifiez la doc Vapi en vigueur lors de l'intégration.*
+Secret optionnel : `VAPI_SECRET` (en-tête `x-vapi-secret`). Ce stub suit le format documenté par Vapi
+au moment où j'ai écrit cette partie ; il faut vérifier la documentation Vapi en vigueur lors de l'intégration.
 
 ## Alternatives open-source
 
@@ -283,9 +313,9 @@ au moment de l'écriture ; vérifiez la doc Vapi en vigueur lors de l'intégrati
 - **Téléphonie** : Asterisk / FreeSWITCH + un opérateur SIP, ou des frameworks d'agents vocaux
   temps réel (Pipecat, LiveKit Agents) qui orchestrent STT → `/vapi/chat/completions` (format OpenAI) → TTS.
 
-Ce MVP s'inspire de l'esprit de projets open-source de réceptionnistes vocaux (call-assist,
-Dental-Voice-Assistant, open-receptionist, Aiva) : boucle STT → LLM → TTS, prise de rendez-vous par
-outils, journalisation. Il a été réécrit et simplifié ici, sans reprise de leur code.
+Pour l'architecture vocale, je me suis appuyée sur des projets open-source comme call-assist,
+Dental-Voice-Assistant, open-receptionist et Aiva (boucle STT → LLM → TTS, prise de rendez-vous par
+outils, journalisation). J'ai réécrit et simplifié cette partie, sans reprendre leur code.
 
 ## Espace cabinet (multi-tenant)
 
@@ -324,7 +354,7 @@ Mot de passe commun : **`CareAssist-Demo-2026`** (comptes fictifs créés par le
 | `dr.diop@demo.getcareassist.com` | titulaire | Cabinet médical des Almadies (Dakar, SN) |
 | `dr.ngono@demo.getcareassist.com` | titulaire | Cabinet dentaire de Bonapriso (Douala, CM) |
 
-> Désactivez `SEED_DEMO` (ou changez ces mots de passe) avant toute mise en production réelle.
+> Désactiver `SEED_DEMO` (ou changer ces mots de passe) avant toute mise en production réelle.
 
 ## Adaptation par pays et zone
 
@@ -335,8 +365,9 @@ Le prompt système de l'IA, les réponses d'urgence et les messages vocaux utili
 (jetons `[[SAMU]]`, `[[POLICE]]`, `[[SUICIDE]]`… remplacés à la volée). Les rendez-vous sont stockés en heure locale
 du cabinet, les envois planifiés en UTC.
 
-**Règle** : un numéro d'urgence n'est intégré que s'il est vérifié sur une source officielle ou fiable ; sinon le
-pays est marqué `TODO` et l'IA renvoie vers « les services d'urgence locaux » sans inventer de numéro.
+**Règle que je me suis fixée** : un numéro d'urgence n'est intégré que s'il est vérifié sur une source officielle
+ou fiable ; sinon le pays est marqué `TODO` et l'IA renvoie vers « les services d'urgence locaux » sans inventer
+de numéro.
 
 | Pays | Urgences intégrées | Sources |
 |---|---|---|
@@ -347,7 +378,7 @@ pays est marqué `TODO` et l'IA renvoie vers « les services d'urgence locaux »
 | Maroc, Nigeria, Kenya, Ghana, Belgique | **TODO** (non vérifiés, non intégrés) | — |
 
 Pas de ligne nationale de prévention du suicide vérifiée pour SN / CI / CM (TODO). Les URL exactes figurent dans
-`app/countries.py`. **Faites relire ces numéros localement avant toute mise en service.**
+`app/countries.py`. **Ces numéros doivent être relus localement avant toute mise en service.**
 
 Ajouter un pays : une entrée dans `COUNTRIES` (+ `pricing.COUNTRY_REGION` pour la devise) et un test.
 
@@ -419,8 +450,8 @@ python -m app.cli list-backups
 python -m app.cli restore data/backups/careassist-<horodatage>.db   # vérifie l'intégrité, garde une copie de l'actuelle
 python -m app.cli create-user <practice_id> secretariat@cabinet.fr "Accueil" secretary   # mot de passe demandé
 ```
-Copiez les sauvegardes **hors du serveur** (stockage objet chiffré, autre région) : une sauvegarde sur le même
-disque ne protège pas d'une perte du disque.
+Les sauvegardes doivent être copiées **hors du serveur** (stockage objet chiffré, autre région) : une sauvegarde
+sur le même disque ne protège pas d'une perte du disque.
 
 **PostgreSQL / `DATABASE_URL`** : non implémenté. Le code utilise `sqlite3` directement (SQL standard, quelques
 `INSERT OR IGNORE` / `ALTER TABLE` spécifiques). Migration recommandée avant plusieurs centaines de cabinets ou
@@ -429,7 +460,7 @@ par `ON CONFLICT DO NOTHING`, puis migrer les données (`pgloader`). Les sauvega
 
 **Hébergement HDS** : en France, héberger des données de santé pour le compte de tiers impose un hébergeur
 **certifié HDS** (OVHcloud, Scaleway, Outscale, régions certifiées d'Azure/AWS/GCP…). Render, Railway et Fly.io ne le
-sont pas : utilisez-les pour la démo uniquement. Dans les autres pays, vérifiez la loi locale (ex. Sénégal : CDP).
+sont pas : à réserver à la démo. Dans les autres pays, vérifier la loi locale (ex. Sénégal : CDP).
 
 ## Sécurité et RGPD
 
@@ -451,14 +482,14 @@ sont pas : utilisez-les pour la démo uniquement. Dans les autres pays, vérifie
 
 ## Déploiement
 
-**Render (un clic)** : le fichier `render.yaml` décrit un *Blueprint* : Render → *New* → *Blueprint* → choisissez
+**Render (un clic)** : le fichier `render.yaml` décrit un *Blueprint* : Render → *New* → *Blueprint* → choisir
 le dépôt GitHub. Service web Python gratuit, `healthCheckPath: /health`, `ADMIN_TOKEN` et `VOIP_WEBHOOK_TOKEN`
 générés automatiquement, clés fournisseurs à saisir dans le dashboard (`sync: false`).
 > **Persistance** : le plan gratuit n'a **pas de disque persistant** : la base SQLite est réinitialisée à chaque
-> redéploiement ou mise en veille prolongée (acceptable pour une démo, pas pour des patients). En production, passez
-> en plan payant et activez le bloc `disk` du `render.yaml` (`DB_PATH=/var/data/careassist.db`,
-> `BACKUP_DIR=/var/data/backups`), ou utilisez PostgreSQL. Le plan gratuit se met en veille : le planificateur de
-> rappels ne tourne pas pendant la veille (préférez un plan payant ou un cron externe).
+> redéploiement ou mise en veille prolongée (acceptable pour une démo, pas pour des patients). En production, passer
+> en plan payant et activer le bloc `disk` du `render.yaml` (`DB_PATH=/var/data/careassist.db`,
+> `BACKUP_DIR=/var/data/backups`), ou utiliser PostgreSQL. Le plan gratuit se met en veille : le planificateur de
+> rappels ne tourne pas pendant la veille (préférer un plan payant ou un cron externe).
 
 **Procfile** (Heroku, Scalingo, Clever Cloud…) : `web: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers`.
 Scalingo et Clever Cloud proposent des offres certifiées HDS.
@@ -468,10 +499,10 @@ Scalingo et Clever Cloud proposent des offres certifiées HDS.
 cp .env.example .env
 docker compose up -d --build        # http://localhost:8000, base persistée dans ./data ; HEALTHCHECK sur /health
 ```
-**Domaine** : `getcareassist.com` → définissez `PUBLIC_BASE_URL=https://getcareassist.com`, puis configurez les
+**Domaine** : `getcareassist.com` → définir `PUBLIC_BASE_URL=https://getcareassist.com`, puis configurer les
 webhooks Twilio / Vonage / Africa's Talking / Vapi / paiement sur ce domaine.
 
-**Railway** / **Fly.io** : `Dockerfile` détecté ; montez un volume sur `/app/data`.
+**Railway** / **Fly.io** : `Dockerfile` détecté ; monter un volume sur `/app/data`.
 
 Check-list production : `ADMIN_TOKEN`, `COOKIE_SECURE=true`, `TRUST_PROXY=1`, `TWILIO_VALIDATE=true`,
 `VOIP_WEBHOOK_TOKEN`, `VAPI_SECRET`, secrets de webhooks paiement, `SEED_DEMO=0`, `DISABLE_DOCS=1`,
@@ -486,7 +517,7 @@ devise locale. La grille est dans `app/pricing.py` ; elle peut être remplacée 
 > **Prix indicatifs à valider.** Seul le tarif Europe (299 EUR/mois HT) est la référence. Les autres
 > montants sont des **exemples par défaut**, ajustés grossièrement au pouvoir d'achat local : ce ne sont
 > ni des conversions de change exactes ni des prix validés. Les équivalents en euros sont approximatifs
-> (sauf XOF/XAF, à parité fixe 655,957 pour 1 EUR). Validez-les (marché, TVA/fiscalité locale, frais des
+> (sauf XOF/XAF, à parité fixe 655,957 pour 1 EUR). À valider (marché, TVA/fiscalité locale, frais des
 > prestataires) avant de commercialiser.
 
 | Région (clé) | Pays | Prix par défaut / mois | ≈ EUR | Prestataire | Moyens de paiement |
@@ -520,7 +551,7 @@ réel » avec un bouton « Simuler un paiement réussi ». Forcer la démo même
 ### Configuration des prestataires (variables `.env`, aucune clé dans le code)
 - **Stripe** (Europe, international, Maroc, Maghreb) : `STRIPE_SECRET_KEY` (sk_test_… pour tester).
   Appel `POST /v1/checkout/sessions` en `mode=subscription` avec `price_data` récurrent mensuel
-  (ou `STRIPE_PRICE_<REGION>` pour un prix créé dans le dashboard). Activez SEPA dans le dashboard.
+  (ou `STRIPE_PRICE_<REGION>` pour un prix créé dans le dashboard). Activer SEPA dans le dashboard.
   Webhook : `https://getcareassist.com/webhooks/stripe`, événements `checkout.session.completed`,
   `customer.subscription.deleted`, `invoice.payment_failed` ; secret `STRIPE_WEBHOOK_SECRET` (whsec_…),
   vérification de l'en-tête `Stripe-Signature` (HMAC-SHA256, tolérance 5 min).
@@ -539,25 +570,27 @@ Sécurité : sans secret de webhook configuré, seuls les événements visant un
 acceptés ; tout événement visant un abonnement réel est refusé.
 
 Disponibilité : les moyens de paiement réellement proposés dépendent du pays, de la devise et de
-l'activation de votre compte chez chaque prestataire (ex. Wave, Orange Money). Vérifiez dans leur dashboard.
+l'activation du compte chez chaque prestataire (ex. Wave, Orange Money). À vérifier dans leur dashboard.
 
-## Go-to-market et monétisation
+## Pistes de commercialisation
 
 - **Un seul plan par région** : 299 €/mois HT en Europe, prix locaux en Afrique (indicatifs à valider),
   appels illimités, cabinet solo ou petit groupe, sans engagement. Le mobile money (Orange Money, MTN MoMo,
   M-Pesa, Wave selon pays) lève le principal frein au paiement récurrent pour les cabinets africains.
   Le calculateur ROI de la landing page montre qu'un ou deux nouveaux patients récupérés par mois suffisent
   souvent à rentabiliser l'abonnement (selon la spécialité et les hypothèses saisies).
-- **Coûts variables** à surveiller : minutes Twilio/Vapi + LLM. Fixez un plafond « usage raisonnable »
-  dans les CGV et suivez le coût par cabinet.
+- **Coûts variables** à surveiller : minutes Twilio/Vapi + LLM. Prévoir un plafond « usage raisonnable »
+  dans les CGV et suivre le coût par cabinet.
 - **Acquisition** : démarchage ciblé (annuaires publics de professionnels de santé, Google Maps), démo
   personnalisée en 24 h avec le nom du cabinet (le seed se duplique facilement), partenariats avec
   intégrateurs informatiques de cabinets, prothésistes, centres de formation, associations professionnelles.
 - **Pilote** : 14 jours d'essai sur renvoi « non-réponse » uniquement, puis bilan chiffré
   (appels décrochés, RDV pris, urgences orientées) depuis `/admin`.
-- **Upsell** futur : SMS de rappel, intégration logiciel métier, multi-sites (sur devis).
+- **Évolutions possibles** : SMS de rappel, intégration logiciel métier, multi-sites (sur devis).
 
 ## Limites du MVP
+
+Voici ce que je n'ai pas encore traité, ou seulement en partie :
 
 - Démo : cabinets, praticiens, patients et créneaux fictifs. SMS / WhatsApp / e-mails / appels en **mode démo**
   (enregistrés, non envoyés) : les intégrations Twilio, Vonage, Africa's Talking et SMTP suivent les formats d'API
@@ -574,11 +607,19 @@ l'activation de votre compte chez chaque prestataire (ex. Wave, Orange Money). V
   compléter dans `GoogleCalendarAdapter`.
 - Paiements : testés en mode démo et avec des réponses de prestataires simulées ; aucun appel réel n'a été fait
   aux API Stripe/Flutterwave/Paystack. Renouvellements mensuels : Stripe gère l'abonnement nativement ;
-  pour Flutterwave/Paystack, configurez un plan (`FLW_PLAN_*`, `PAYSTACK_PLAN_*`), sinon seul le premier mois est encaissé.
+  pour Flutterwave/Paystack, configurer un plan (`FLW_PLAN_*`, `PAYSTACK_PLAN_*`), sinon seul le premier mois est encaissé.
   Pas de facturation/TVA automatique, ni de gestion des impayés au-delà du statut `failed`.
 - CareAssist n'est pas un dispositif médical : il oriente et organise, il ne diagnostique pas.
   Les règles d'urgence et les textes de remboursement doivent être relus par des professionnels.
 
-Contact : contact@getcareassist.com · https://getcareassist.com
+## Auteure
+
+**Saurelle Nguefack**, conceptrice de CareAssist.
+
+Je recherche un poste en systèmes, réseaux et cybersécurité, en Île-de-France.
+
+LinkedIn : _à compléter_
+
+Contact du projet : contact@getcareassist.com · https://getcareassist.com
 
 Crédits photos : voir `static/img/CREDITS.md` (Pexels, licence Pexels).
