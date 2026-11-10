@@ -16,7 +16,9 @@ PRODUCT_NAME = "CareAssist"
 SLOGAN = "Ne manquez plus jamais un rendez-vous. Votre réceptionniste IA 24/7 pour les professionnels de santé."
 PRICE_EUR_MONTH = 299
 SITE_URL = "https://getcareassist.com"
-CONTACT_EMAIL = "contact@getcareassist.com"
+CONTACT_EMAIL = "saurellenguefack543@gmail.com"
+CONTACT_PHONE = "06 05 50 85 42"
+CONTACT_PHONE_TEL = "+33605508542"
 
 
 def env(name: str, default: str = "") -> str:

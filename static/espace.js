@@ -51,6 +51,7 @@ const EMERG_LABELS = { samu: "SAMU", general: "urgences (numéro européen)", po
     $("#p-name").textContent = ME.practice.name;
     $("#p-meta").textContent = `${ME.country.name} · ${ME.practice.timezone} · ${ME.practice.currency}`;
     $("#u-name").textContent = `${ME.user.name} (${{ owner: "titulaire", practitioner: "praticien", secretary: "secrétariat" }[ME.user.role]})`;
+    renderPlanBanner();
     document.querySelectorAll("#side-nav [data-role]").forEach(b => { b.hidden = !b.dataset.role.split(" ").includes(ME.user.role); });
     go(location.hash.slice(1) || "dashboard");
   }
@@ -72,6 +73,27 @@ const EMERG_LABELS = { samu: "SAMU", general: "urgences (numéro européen)", po
     catch (err) { m.className = "form-msg err"; m.textContent = err.message; }
   });
   $("#logout").addEventListener("click", async () => { await api("/api/auth/logout", { method: "POST" }).catch(() => {}); location.hash = ""; showLogin(); });
+
+  function renderPlanBanner() {
+    const el = $("#plan-banner"); if (!el) return;
+    const plan = ME.plan || {};
+    el.hidden = false;
+    if (plan.plan === "premium") {
+      el.className = "plan-banner";
+      if (plan.trialing && plan.trial_days_left != null) {
+        el.innerHTML = `<strong>Essai Premium</strong> — ${plan.trial_days_left} jour(s) restant(s).` +
+          (ME.user.role === "owner" ? ` <button type="button" class="btn btn-primary btn-sm" id="upgrade-plan">Passer au Premium</button>` : "");
+      } else {
+        el.innerHTML = `<strong>Plan Premium</strong>` + (plan.is_demo ? " (cabinet de démonstration)" : "");
+      }
+    } else {
+      el.className = "plan-banner free";
+      el.innerHTML = `<strong>Plan Gratuit</strong> — 30 conversations IA / mois, rappels par e-mail, 1 utilisateur.` +
+        (ME.user.role === "owner" ? ` <button type="button" class="btn btn-primary btn-sm" id="upgrade-plan">Passer au Premium</button>` : "");
+    }
+    const btn = $("#upgrade-plan");
+    if (btn) btn.addEventListener("click", () => { location.href = "/tarifs"; });
+  }
 
   // ------------------------------------------------------------ navigation
   const TITLES = { dashboard: "Tableau de bord", agenda: "Rendez-vous", patients: "Patients", calls: "Appels & messages",
@@ -215,49 +237,138 @@ const EMERG_LABELS = { samu: "SAMU", general: "urgences (numéro européen)", po
       const s = await api("/api/espace/settings"); const prof = s.country_profile;
       const opt = (obj, cur) => Object.entries(obj).map(([k, v]) => `<option value="${esc(k)}" ${k === cur ? "selected" : ""}>${esc(v)}</option>`).join("");
       const chans = s.patient_channels || prof.preferred_channels;
-      $("#view").innerHTML = `<form id="sf" class="panel form-grid">
+      const listing = s.listing || {};
+      const plan = s.plan || ME.plan || {};
+      let listingNote = "";
+      if (!listing.directory_visible) listingNote = "Votre cabinet n'apparaît pas dans l'annuaire public (choix du titulaire).";
+      else if (listing.listing_status === "published") listingNote = "Fiche publiée dans l'annuaire public.";
+      else if (listing.listing_status === "rejected") listingNote = "Fiche refusée par l'équipe CareAssist.";
+      else if (listing.auto_publish_at) {
+        const d = listing.auto_publish_at.slice(0, 16).replace("T", " ");
+        listingNote = `En attente de validation. Publication prévue le ${d} (UTC) si personne n'intervient.`;
+      } else listingNote = "En attente de validation.";
+      const planLine = plan.trialing && plan.trial_days_left != null
+        ? `Essai Premium — ${plan.trial_days_left} jour(s) restant(s).`
+        : (plan.plan === "premium" ? "Plan Premium." : "Plan Gratuit : 30 conversations IA / mois, un utilisateur, rappels par e-mail.");
+      $("#view").innerHTML = `<div class="panel">
+        <h2>Forfait</h2>
+        <p>${esc(planLine)}</p>
+        ${ME.user.role === "owner" && plan.plan !== "premium" || plan.trialing ? '<p><a class="btn btn-primary btn-sm" href="/tarifs">Passer au Premium</a></p>' : (plan.plan === "free" ? '<p><a class="btn btn-primary btn-sm" href="/tarifs">Passer au Premium</a></p>' : "")}
+      </div>
+      <form id="sf" class="panel form-grid">
         <h2 class="full">Cabinet</h2>
+        <div class="full logo-box">
+          <img id="logo-preview" alt="Logo du cabinet" src="${s.has_logo ? "/api/espace/logo" : "/img/praticien.jpg"}" />
+          <div>
+            <label for="logo-file">Logo du cabinet</label>
+            <input id="logo-file" type="file" accept="image/jpeg,image/png,image/webp" />
+            <div class="actions" style="margin-top:8px">
+              <button type="button" class="btn btn-outline btn-sm" id="logo-upload">Téléverser</button>
+              ${s.has_logo ? '<button type="button" class="btn-ghost" id="logo-del">Supprimer le logo</button>' : ""}
+            </div>
+            <p class="hint">JPEG, PNG ou WebP, 1 Mo maximum. Enregistré en WebP (800 px).</p>
+            <p id="logo-msg" class="form-msg" role="status"></p>
+          </div>
+        </div>
         <div><label for="f-name">Nom</label><input id="f-name" name="name" value="${esc(s.name)}" /></div>
         <div><label for="f-spec">Spécialité</label><select id="f-spec" name="specialty">${opt(s.specialties, s.specialty)}</select></div>
         <div class="full"><label for="f-addr">Adresse</label><input id="f-addr" name="address" value="${esc(s.address)}" /></div>
+        <div><label for="f-city">Ville</label><input id="f-city" name="city" value="${esc(s.city || "")}" /></div>
         <div><label for="f-phone">Téléphone affiché</label><input id="f-phone" name="phone" value="${esc(s.phone)}" /></div>
         <div><label for="f-email">E-mail du cabinet</label><input id="f-email" name="email" type="email" value="${esc(s.email || "")}" /></div>
         <div class="full"><label for="f-hours">Horaires (texte lu par l'assistante)</label><input id="f-hours" name="hours" value="${esc(s.hours)}" /></div>
+        <div class="full"><label for="f-access">Accès (transports, interphone, parking)</label><input id="f-access" name="access" value="${esc(s.access || "")}" /></div>
         <div class="full"><label for="f-ins">Remboursement / assurances (texte lu par l'assistante)</label><textarea id="f-ins" name="insurance_note" rows="2">${esc(s.insurance_note || "")}</textarea></div>
+        <div class="full"><label for="f-prices">Tarifs / honoraires (texte lu par l'assistante)</label><textarea id="f-prices" name="prices_note" rows="2">${esc(s.prices_note || "")}</textarea></div>
+        <h2 class="full">Contact d'urgence du cabinet</h2>
+        <div><label for="f-en">Nom du contact</label><input id="f-en" name="emergency_contact_name" value="${esc(s.emergency_contact_name || "")}" /></div>
+        <div><label for="f-ep">Téléphone d'urgence</label><input id="f-ep" name="emergency_contact_phone" value="${esc(s.emergency_contact_phone || "")}" placeholder="${esc(prof.dial_code)} …" /></div>
         <h2 class="full">Pays et langue</h2>
         <div><label for="f-country">Pays</label><select id="f-country" name="country">${opt(s.countries, s.country)}</select></div>
         <div><label for="f-tz">Fuseau horaire</label><input id="f-tz" name="timezone" value="${esc(s.timezone)}" /></div>
         <div><label for="f-cur">Devise</label><input id="f-cur" name="currency" value="${esc(s.currency)}" maxlength="3" /></div>
         <div><label for="f-lang">Langue</label><select id="f-lang" name="language">${opt({ fr: "Français", en: "English" }, s.language)}</select></div>
         <p class="full hint">Urgences utilisées pour ${esc(prof.name)} : ${Object.entries(prof.emergency || {}).map(([k, v]) => `${esc(k)} ${esc(v)}`).join(", ") || "<strong>non vérifiées (TODO)</strong> — l'assistante oriente vers les urgences locales sans citer de numéro"}. ${prof.todo ? esc(prof.todo) : ""}</p>
+        <h2 class="full">Annuaire public</h2>
+        <label class="check full"><input type="checkbox" name="directory_visible" ${listing.directory_visible ? "checked" : ""}/> Visible dans l'annuaire des cabinets</label>
+        <p class="full hint listing-status">${esc(listingNote)}</p>
         <h2 class="full">Notifications</h2>
         <label class="check full"><input type="checkbox" name="notify_on_booking" ${s.notify_on_booking ? "checked" : ""}/> Confirmation à la prise de rendez-vous</label>
         <label class="check full"><input type="checkbox" name="notify_practitioner" ${s.notify_practitioner ? "checked" : ""}/> Prévenir aussi le praticien</label>
         <div><label for="f-po">Rappels patient (minutes avant, ex. 1440, 120)</label><input id="f-po" name="notify_patient_offsets" value="${esc((s.notify_patient_offsets || []).join(", "))}" /></div>
         <div><label for="f-pro">Rappels praticien (minutes avant)</label><input id="f-pro" name="notify_practitioner_offsets" value="${esc((s.notify_practitioner_offsets || []).join(", "))}" /></div>
-        <div><label for="f-ch">Canaux patient par ordre de priorité</label><input id="f-ch" name="patient_channels" value="${esc(chans.join(", "))}" /><span class="hint">sms, whatsapp, email (défaut pays : ${esc(prof.preferred_channels.join(", "))})</span></div>
+        <div><label for="f-ch">Canaux patient par ordre de priorité</label><input id="f-ch" name="patient_channels" value="${esc(chans.join(", "))}" /><span class="hint">sms, whatsapp, email (défaut pays : ${esc(prof.preferred_channels.join(", "))})${plan.plan === "free" ? " — plan Gratuit : e-mail uniquement" : ""}</span></div>
         <div><label for="f-pc">Canal praticien</label><select id="f-pc" name="practitioner_channel">${opt({ email: "E-mail", sms: "SMS", whatsapp: "WhatsApp" }, s.practitioner_channel)}</select></div>
         <div><label for="f-qs">Heures calmes : début</label><input id="f-qs" name="quiet_start" value="${esc(s.quiet_start)}" pattern="\\d{2}:\\d{2}" /></div>
         <div><label for="f-qe">Heures calmes : fin</label><input id="f-qe" name="quiet_end" value="${esc(s.quiet_end)}" pattern="\\d{2}:\\d{2}" /></div>
         <h2 class="full">Téléphonie (VoIP cloud)</h2>
         <div><label for="f-vp">Fournisseur</label><select id="f-vp" name="voip_provider">${opt({ auto: "Automatique (selon le pays)", twilio: "Twilio", vonage: "Vonage", africastalking: "Africa's Talking" }, s.voip_provider)}</select></div>
-        <div><label for="f-vn">Numéro du cabinet (appels entrants)</label><input id="f-vn" name="voip_number" value="${esc(s.voip_number || "")}" placeholder="${esc(prof.dial_code)} …" /></div>
+        <div><label for="f-vn">Numéro du cabinet (appels entrants)</label><input id="f-vn" name="voip_number" value="${esc(s.voip_number || "")}" placeholder="${esc(prof.dial_code)} …" ${plan.plan === "free" && !plan.trialing ? "disabled" : ""} /></div>
         <div><label for="f-tn">Transfert vers un humain</label><input id="f-tn" name="transfer_number" value="${esc(s.transfer_number || "")}" /></div>
         <label class="check"><input type="checkbox" name="missed_call_sms" ${s.missed_call_sms ? "checked" : ""}/> SMS automatique après un appel manqué</label>
-        <p class="full hint">État des fournisseurs : ${Object.entries(s.voip_status).map(([k, v]) => `${esc(k)} ${v === "live" ? "connecté" : "mode démo"}`).join(" · ")}</p>
-        <div class="full actions"><button class="btn btn-primary btn-sm" type="submit">Enregistrer</button></div><p id="sf-msg" class="form-msg full" role="status"></p></form>`;
+        <p class="full hint">État des fournisseurs : ${Object.entries(s.voip_status).map(([k, v]) => `${esc(k)} ${v === "live" ? "connecté" : "mode démo"}`).join(" · ")}. ${plan.plan === "free" && !plan.trialing ? "Le numéro VoIP dédié est réservé au plan Premium." : ""}</p>
+        <div class="full actions"><button class="btn btn-primary btn-sm" type="submit">Enregistrer</button></div><p id="sf-msg" class="form-msg full" role="status"></p></form>
+      <div class="panel" id="faq-panel">
+        <h2>Questions fréquentes du cabinet</h2>
+        <p class="hint">Réponses personnalisées utilisées par l'assistante, avant les réponses génériques de la spécialité.</p>
+        <div class="faq-list" id="faq-list"></div>
+        <form id="faq-form" class="form-grid" style="margin-top:16px">
+          <div class="full"><label for="fq">Question</label><input id="fq" name="question" required minlength="3" /></div>
+          <div class="full"><label for="fa">Réponse</label><textarea id="fa" name="answer" rows="3" required minlength="3"></textarea></div>
+          <div class="full"><label for="fk">Mots-clés (facultatif, séparés par une virgule)</label><input id="fk" name="keywords" /></div>
+          <div class="full actions"><button class="btn btn-outline btn-sm" type="submit">Ajouter la question</button></div>
+          <p id="faq-msg" class="form-msg full" role="status"></p>
+        </form>
+      </div>`;
+      const loadFaq = async () => {
+        const rows = await api("/api/espace/faq");
+        $("#faq-list").innerHTML = rows.length ? rows.map(r => `<div class="faq-item" data-faq="${r.id}">
+          <h3>${esc(r.question)}</h3><p>${esc(r.answer)}</p>
+          ${r.keywords ? `<p class="hint">${esc(r.keywords)}</p>` : ""}
+          ${ME.user.role === "owner" ? `<button type="button" class="btn-ghost small" data-del-faq="${r.id}">Supprimer</button>` : ""}
+        </div>`).join("") : '<p class="hint">Aucune question personnalisée pour le moment.</p>';
+        document.querySelectorAll("[data-del-faq]").forEach(b => b.addEventListener("click", async () => {
+          await api(`/api/espace/faq/${b.dataset.delFaq}`, { method: "DELETE" }); toast("Question supprimée"); loadFaq();
+        }));
+      };
+      await loadFaq();
+      if ($("#faq-form") && ME.user.role === "owner") $("#faq-form").addEventListener("submit", async e => {
+        e.preventDefault(); const f = new FormData(e.target); const m = $("#faq-msg"); m.className = "form-msg full";
+        try {
+          await api("/api/espace/faq", { method: "POST", body: { question: f.get("question"), answer: f.get("answer"), keywords: f.get("keywords") || null } });
+          e.target.reset(); m.className = "form-msg ok full"; m.textContent = "Question ajoutée."; await loadFaq();
+        } catch (err) { m.className = "form-msg err full"; m.textContent = err.message; }
+      });
+      if ($("#logo-upload")) $("#logo-upload").addEventListener("click", async () => {
+        const input = $("#logo-file"); const m = $("#logo-msg"); m.className = "form-msg";
+        if (!input.files || !input.files[0]) { m.className = "form-msg err"; m.textContent = "Choisissez une image."; return; }
+        const fd = new FormData(); fd.append("file", input.files[0]);
+        try {
+          const r = await fetch("/api/espace/logo", { method: "POST", headers: { "X-CSRF-Token": decodeURIComponent(csrf()) }, credentials: "same-origin", body: fd });
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(data.detail || "Erreur " + r.status);
+          m.className = "form-msg ok"; m.textContent = "Logo enregistré.";
+          $("#logo-preview").src = "/api/espace/logo?t=" + Date.now();
+        } catch (err) { m.className = "form-msg err"; m.textContent = err.message; }
+      });
+      if ($("#logo-del")) $("#logo-del").addEventListener("click", async () => {
+        await api("/api/espace/logo", { method: "DELETE" }); toast("Logo supprimé"); go("settings");
+      });
       $("#sf").addEventListener("submit", async e => {
         e.preventDefault(); const f = new FormData(e.target); const nums = v => String(v || "").split(",").map(x => parseInt(x, 10)).filter(x => x > 0);
-        const b = { name: f.get("name"), specialty: f.get("specialty"), address: f.get("address"), phone: f.get("phone"), email: f.get("email") || null,
-          hours: f.get("hours"), insurance_note: f.get("insurance_note") || null, country: f.get("country"), timezone: f.get("timezone"), currency: f.get("currency"),
+        const b = { name: f.get("name"), specialty: f.get("specialty"), address: f.get("address"), city: f.get("city") || null, phone: f.get("phone"), email: f.get("email") || null,
+          hours: f.get("hours"), access: f.get("access") || null, insurance_note: f.get("insurance_note") || null, prices_note: f.get("prices_note") || null,
+          emergency_contact_name: f.get("emergency_contact_name") || null, emergency_contact_phone: f.get("emergency_contact_phone") || null,
+          country: f.get("country"), timezone: f.get("timezone"), currency: f.get("currency"),
           language: f.get("language"), notify_on_booking: !!f.get("notify_on_booking"), notify_practitioner: !!f.get("notify_practitioner"),
           notify_patient_offsets: nums(f.get("notify_patient_offsets")), notify_practitioner_offsets: nums(f.get("notify_practitioner_offsets")),
           patient_channels: String(f.get("patient_channels")).split(",").map(x => x.trim()).filter(Boolean), practitioner_channel: f.get("practitioner_channel"),
           quiet_start: f.get("quiet_start"), quiet_end: f.get("quiet_end"), voip_provider: f.get("voip_provider"), voip_number: f.get("voip_number") || null,
-          transfer_number: f.get("transfer_number") || null, missed_call_sms: !!f.get("missed_call_sms") };
+          transfer_number: f.get("transfer_number") || null, missed_call_sms: !!f.get("missed_call_sms"),
+          directory_visible: !!f.get("directory_visible") };
         if (b.country !== s.country) { delete b.timezone; delete b.currency; }
         const m = $("#sf-msg");
-        try { await api("/api/espace/settings", { method: "PUT", body: b }); m.className = "form-msg ok"; m.textContent = "Paramètres enregistrés."; ME = await api("/api/auth/me"); TZ = ME.practice.timezone; }
+        try { await api("/api/espace/settings", { method: "PUT", body: b }); m.className = "form-msg ok"; m.textContent = "Paramètres enregistrés."; ME = await api("/api/auth/me"); TZ = ME.practice.timezone; renderPlanBanner(); }
         catch (err) { m.className = "form-msg err"; m.textContent = err.message; }
       });
     },

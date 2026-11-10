@@ -186,9 +186,10 @@ class Engine:
             return self.cancel_step(t, text)
         if intent == "booking":
             return self.start_booking(t, text)
-        # FAQ spécifiques à la spécialité
-        for item in self.spec.get("faq", []):
-            if any(re.search(p, t) for p in item["patterns"]) and intent not in ("insurance", "prices"):
+        # FAQ personnalisées du cabinet, puis FAQ de la spécialité
+        for item in self._custom_faq() + self.spec.get("faq", []):
+            patterns = item.get("patterns") or []
+            if patterns and any(re.search(p, t) for p in patterns) and intent not in ("insurance", "prices"):
                 self.meta["intent"] = "faq"
                 return self.open_answer(text, item["answer"] + " Puis-je vous aider pour un rendez-vous ?")
         if intent in ("insurance", "prices", "hours", "address", "privacy", "ai", "thanks", "greeting"):
@@ -201,6 +202,21 @@ class Engine:
         return self.open_answer(text, (
             f"Je suis l'assistante du {self.practice['name']}. Je peux prendre, déplacer ou annuler un rendez-vous, "
             "et répondre à vos questions sur les horaires, l'accès ou les remboursements. Que puis-je faire pour vous ?"))
+
+    def _custom_faq(self) -> list[dict]:
+        pid = self.practice.get("id")
+        if not pid:
+            return []
+        with db.get_conn() as conn:
+            rows = db.rows(conn.execute(
+                "SELECT question, answer, keywords FROM practice_faq WHERE practice_id=? ORDER BY sort_order, id",
+                (pid,)))
+        items = []
+        for r in rows:
+            keys = [k.strip() for k in (r.get("keywords") or r["question"]).split(",") if k.strip()]
+            patterns = [re.escape(k.lower()) for k in keys] or [re.escape(r["question"][:40].lower())]
+            items.append({"patterns": patterns, "answer": r["answer"]})
+        return items
 
     # ---- open questions: LLM if available, else rules
     def open_answer(self, text: str, rules_answer: str) -> str:
@@ -488,8 +504,19 @@ def resolve_practice(practice_key=None, conv: dict | None = None) -> dict:
 
 
 def process_message(message: str, session_id: str | None = None, practice=None, channel: str = "web") -> dict:
+    from . import plans
     session_id = session_id or uuid.uuid4().hex
-    existing = db.get_or_create_conversation(session_id, channel)
+    existing = db.get_conversation(session_id)
+    is_new = existing is None
+    if existing is None:
+        # on résout d'abord le cabinet pour appliquer le quota avant de créer la conversation
+        p = resolve_practice(practice, None)
+        quota = plans.check_ai_quota(p)
+        if not quota["allowed"]:
+            return {"session_id": session_id, "practice": {"id": p["id"], "slug": p["slug"], "name": p["name"], "specialty": p["specialty"]},
+                    "reply": plans.quota_reached_reply(p), "state": {}, "intent": "quota", "engine": "quota",
+                    "emergency": {"level": "none"}, "quota": quota}
+        existing = db.get_or_create_conversation(session_id, channel, p["id"])
     p = resolve_practice(practice, existing)
     if existing.get("practice_id") != p["id"]:
         with db.get_conn() as conn:

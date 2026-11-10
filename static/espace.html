@@ -7,8 +7,8 @@
   <title>Espace cabinet — CareAssist</title>
   <meta name="description" content="Espace privé du cabinet : patients, rendez-vous, appels, rappels automatiques et sauvegardes." />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="styles.css?v=5" />
-  <link rel="stylesheet" href="espace.css?v=2" />
+  <link rel="stylesheet" href="styles.css?v=8" />
+  <link rel="stylesheet" href="espace.css?v=3" />
 </head>
 <body class="espace">
 <a class="skip" href="#main">Aller au contenu</a>
@@ -51,6 +51,7 @@
   <aside class="side" aria-label="Navigation de l'espace cabinet">
     <a href="/" class="logo"><span class="logo-mark"><svg class="i" data-icon="phone"></svg></span> CareAssist</a>
     <div class="practice-chip"><strong id="p-name"></strong><span id="p-meta"></span></div>
+    <div id="plan-banner" class="plan-banner" hidden></div>
     <nav id="side-nav">
       <button data-view="dashboard" class="active"><svg class="i" data-icon="home"></svg>Tableau de bord</button>
       <button data-view="agenda"><svg class="i" data-icon="calendar"></svg>Rendez-vous</button>
@@ -83,6 +84,6 @@
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="icons.js?v=4"></script>
-<script src="espace.js?v=2"></script>
+<script src="espace.js?v=3"></script>
 </body>
 </html>

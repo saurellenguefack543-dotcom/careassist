@@ -209,6 +209,21 @@ def _seed_accounts() -> None:
                 except booking.BookingError:
                     pass
 
+    # Cabinets de démo : Premium, fiches déjà publiées, ville renseignée
+    from . import directory, plans
+    with db.get_conn() as conn:
+        for row in conn.execute("SELECT id, address, city, is_demo FROM practices").fetchall():
+            city = row["city"] or directory.infer_city(row["address"])
+            if row["is_demo"]:
+                conn.execute(
+                    "UPDATE practices SET plan=?, subscription_status=?, trial_ends_at=NULL, "
+                    "listing_status=?, published_at=COALESCE(published_at, ?), directory_visible=1, city=? WHERE id=?",
+                    (plans.PLAN_PREMIUM, plans.STATUS_ACTIVE, "published", db.now_iso(), city, row["id"]),
+                )
+            elif city and not row["city"]:
+                conn.execute("UPDATE practices SET city=? WHERE id=?", (city, row["id"]))
+
 
 if __name__ == "__main__":
+
     print(f"Seed OK — {seed()} créneaux ajoutés")

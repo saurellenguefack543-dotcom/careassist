@@ -61,3 +61,13 @@ pre.tr{white-space:pre-wrap;font-family:inherit;font-size:.82rem;background:#f8f
   .cards{grid-template-columns:repeat(2,1fr)}.week{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.main{padding:16px}}
 
 [hidden]{display:none !important}
+
+.plan-banner{margin:10px 12px 0;padding:10px 12px;border-radius:12px;background:#e6f6f5;color:var(--brand-ink);font-size:.82rem;line-height:1.4}
+.plan-banner.free{background:#fff7ed;color:#9a3412}
+.plan-banner .btn{margin-top:8px}
+.logo-box{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.logo-box img{width:96px;height:96px;object-fit:cover;border-radius:16px;border:1px solid var(--line);background:#fff}
+.faq-list{display:grid;gap:10px}
+.faq-item{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--bg)}
+.faq-item h3{font-size:.95rem;margin:0 0 6px}
+.listing-status{font-weight:600}

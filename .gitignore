@@ -8,3 +8,4 @@ data/*.jsonl
 data/backups/
 data/*.before-restore-*
 *.zip
+data/logos/

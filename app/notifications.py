@@ -124,20 +124,30 @@ def choose_patient_channel(practice: dict, patient: dict | None) -> tuple[str | 
         defaults = json.loads(practice.get("patient_channels") or "null") or get_country(practice.get("country"))["preferred_channels"]
     except ValueError:
         defaults = get_country(practice.get("country"))["preferred_channels"]
+    from . import plans
+    allowed = set(plans.allowed_channels(practice))
     order = ([pref] if pref != "auto" else []) + [c for c in defaults if c != pref] + ["sms", "email"]
     for ch in order:
+        if ch not in allowed:
+            continue
         if ch in ("sms", "whatsapp") and patient.get("phone_e164"):
             return ch, patient["phone_e164"], "ok"
         if ch == "email" and patient.get("email"):
             return ch, patient["email"], "ok"
+    if allowed == {"email"}:
+        return None, None, "plan gratuit : rappels par e-mail uniquement, aucune adresse"
     return None, None, "aucune coordonnée utilisable"
 
 
 def choose_practitioner_channel(practice: dict, appt: dict) -> tuple[str | None, str | None, str]:
+    from . import plans
     pref = appt.get("practitioner_notify_channel") or practice.get("practitioner_channel") or "email"
     email = appt.get("practitioner_email") or practice.get("email")
     phone = appt.get("practitioner_phone") or practice.get("phone_e164")
+    allowed = set(plans.allowed_channels(practice))
     for ch in [pref, "email", "sms"]:
+        if ch not in allowed:
+            continue
         if ch == "email" and email:
             return "email", email, "ok"
         if ch in ("sms", "whatsapp") and phone:

@@ -157,6 +157,7 @@ def public_pricing() -> dict:
             "indicative": bool(r.get("indicative", True)), "provider": r["provider"], "methods": r.get("methods", []),
             "methods_note": r.get("methods_note"), "countries": r.get("countries", []),
         })
-    return {"plan": "CareAssist — appels illimités, cabinet solo ou petit groupe", "interval": "month",
+    from .plans import public_plans, TRIAL_DAYS
+    return {"plan": "CareAssist Premium — appels illimités, cabinet solo ou petit groupe", "interval": "month",
             "reference_region": REFERENCE_REGION, "disclaimer": DISCLAIMER_FR, "regions": out,
-            "timezone_country": TIMEZONE_COUNTRY}
+            "timezone_country": TIMEZONE_COUNTRY, "plans": public_plans(), "trial_days": TRIAL_DAYS}

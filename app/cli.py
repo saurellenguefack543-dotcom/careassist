@@ -32,6 +32,8 @@ def main(argv=None):
     u.add_argument("role", choices=["owner", "practitioner", "secretary"])
     pg = sub.add_parser("purge")
     pg.add_argument("--days", type=int, default=1095)
+    sub.add_parser("process-trials")
+    sub.add_parser("process-listings")
     a = ap.parse_args(argv)
 
     from . import db
@@ -61,6 +63,12 @@ def main(argv=None):
     elif a.cmd == "purge":
         from .retention import purge
         print(json.dumps(purge(a.days)))
+    elif a.cmd == "process-trials":
+        from .plans import process_trials
+        print(json.dumps(process_trials()))
+    elif a.cmd == "process-listings":
+        from .directory import process_listings
+        print(json.dumps(process_listings()))
 
 
 if __name__ == "__main__":

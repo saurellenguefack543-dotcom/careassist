@@ -1,11 +1,12 @@
-/* CareAssist — landing page (vanilla JS, aucune étape de build) */
+/* CareAssist — site public (vanilla JS, aucune étape de build) */
 (() => {
   "use strict";
   const API = location.protocol === "file:" ? "http://localhost:8000" : "";
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const page = document.body.dataset.page || "";
+  const CONTACT_EMAIL = "saurellenguefack543@gmail.com";
 
-  // ------------------------------------------------------------ spécialités (copie locale pour le mode hors ligne)
   const SPECS = [
     { key: "dentiste", icon: "tooth", fr: "Chirurgien-dentiste", en: "Dentist", practice: "Cabinet Dentaire du Parc",
       desc_fr: "Urgences (douleur, gonflement, dent cassée), détartrage, devis prothèses, 100 % Santé.",
@@ -34,28 +35,35 @@
       roi: { missed_calls: 6, new_share: 30, conversion: 60, value: 300 } },
   ];
 
-  // ------------------------------------------------------------ i18n
   const EN = {
-    "nav.pros": "Professions", "nav.demo": "Demo", "nav.roi": "ROI", "nav.pricing": "Pricing", "nav.cta": "Free trial",
+    "nav.home": "Home", "nav.features": "Features", "nav.pros": "Specialties", "nav.directory": "Practices",
+    "nav.demo": "Demo", "nav.pricing": "Pricing", "nav.contact": "Contact", "nav.cta": "Free trial", "nav.login": "Sign in",
     "hero.pill": "Dentists · Psychologists · Ophthalmologists · GPs · Physios",
     "hero.title": "Never miss an appointment again.",
     "hero.subtitle": "Your 24/7 AI receptionist for healthcare professionals.",
     "hero.text": "CareAssist answers every call — during consultations, evenings and weekends. It books, moves and cancels appointments in your calendar, answers patients' questions and immediately routes emergencies to your country's emergency services.",
-    "hero.cta1": "Try the demo", "hero.cta2": "Calculate my ROI", "hero.p1": "no breaks, no sick days", "hero.p2": "to pick up",
-    "hero.p3": "per month, unlimited calls", "hero.call": "Incoming call · 7:42 pm", "hero.booked": "Booked", "hero.cal": "Calendar · tomorrow", "hero.badge": "Emergencies triaged by specialty",
+    "hero.cta1": "Try the demo", "hero.p1": "no breaks, no sick days", "hero.p2": "to pick up",
+    "hero.p3": "Premium, per month, unlimited calls",
+    "home.trial": "14-day Premium trial",
+    "home.featTitle": "The essentials, without the missed calls",
+    "home.moreFeat": "See all features",
+    "home.splitTitle": "Built for France and Africa",
+    "home.splitText": "A private space per practice, reminders for the patient and the practitioner, cloud telephony, and a price adapted to the country: Europe, Senegal, Côte d'Ivoire, Cameroon… 14-day Premium trial, no card required.",
+    "home.dir": "Practice directory", "home.prices": "See pricing",
+    "home.ctaTitle": "Try CareAssist in your practice",
+    "home.ctaSub": "14 days of Premium, no card. Then a Free plan for life, or Premium at your country's rate.",
     "pros.title": "Built for every healthcare profession",
-    "pros.sub": "Each specialty has its own appointment types, FAQs, reimbursement rules and, above all, its own emergency signals. CareAssist knows them.",
+    "pros.sub": "Each specialty has its own appointment types, FAQs, reimbursement rules and, above all, its own emergency signals.",
     "feat.title": "Everything a front desk does, without the missed calls",
-    "nav.space": "Practice space", "nav.login": "Sign in",
+    "feat.pageSub": "A receptionist available 24/7, automatic reminders, and a private space for each practice.",
+    "spec.pageTitle": "An assistant that knows your profession",
     "space.title": "Your practice, your private space",
-    "space.sub": "Each practice gets its own secure space: patient database, calendar, calls and messages, isolated from every other practice.",
-    "space.f1t": "Private practice space", "space.f1": "Patient database (search, contact preferences, consent), weekly or list calendar, attended / no-show statuses, owner, practitioner and front-desk accounts.",
-    "space.f2t": "Automatic reminders", "space.f2": "Patient and practitioner notified on booking, the day before and 2 h before (configurable) by SMS, WhatsApp or email. Patients reply YES or CANCEL and the slot frees itself.",
-    "space.f3t": "Cloud telephony", "space.f3": "Twilio, Vonage or Africa's Talking: a dedicated number per practice, call log with transcript, voicemail, transfer to staff and an automatic SMS after a missed call.",
-    "space.f4t": "Adapted to each country", "space.f4": "Time zone, phone format, currency, preferred channels (WhatsApp in Africa, SMS and email in Europe) and local emergency numbers: 15 and 3114 in France, 1515 in Senegal, 185 in Côte d'Ivoire, 119 in Cameroon.",
-    "space.f5t": "Your data, portable", "space.f5": "One-click JSON or CSV export, automatic daily backups, per-patient export and erasure (GDPR), audit log.",
-    "space.f6t": "Secure by default", "space.f6": "Hashed passwords (bcrypt), secure sessions, CSRF protection, login throttling, strict isolation between practices. HDS-certified hosting recommended in production.",
-    "space.cta": "Open the demo space", "space.cta2": "Talk to the team",
+    "space.f1t": "Private practice space", "space.f1": "Patient database, weekly or list calendar, attended / no-show statuses, owner, practitioner and front-desk accounts.",
+    "space.f2t": "Automatic reminders", "space.f2": "Patient and practitioner notified on booking, the day before and 2 h before, by SMS, WhatsApp or email (depending on the plan).",
+    "space.f3t": "Cloud telephony", "space.f3": "Twilio, Vonage or Africa's Talking: a dedicated number, call log, transfer to staff (Premium plan).",
+    "space.f4t": "Adapted to each country", "space.f4": "Time zone, phone format, currency, preferred channels and local emergency numbers: 15 and 3114 in France, 1515 in Senegal, 185 in Côte d'Ivoire, 119 in Cameroon.",
+    "space.f5t": "Your data, portable", "space.f5": "JSON or CSV export, automatic daily backups (Premium), per-patient export and erasure (GDPR).",
+    "space.f6t": "Secure by default", "space.f6": "Hashed passwords, secure sessions, CSRF protection, strict isolation between practices. HDS-certified hosting recommended in production.",
     "feat.f1t": "Answers 100% of calls", "feat.f1": "During procedures, lunch, evenings and weekends. No more full voicemail.",
     "feat.f2t": "Manages your calendar", "feat.f2": "Real-time booking, rescheduling and cancellation on your real slots only. Google Calendar ready.",
     "feat.f3t": "Triages emergencies", "feat.f3": "Specialty-specific detection: same-day priority slot, or immediate referral to 15 / 3114.",
@@ -68,25 +76,36 @@
     "demo.title": "Talk to CareAssist", "demo.sub": "Pick a specialty and try a real conversation: booking, a reimbursement question or an emergency. (Demo is in French.)",
     "demo.reset": "New conversation", "demo.ph": "Type your message (in French)…", "demo.send": "Send",
     "demo.note": "Demo: practices and slots are fictitious. In a real emergency, call 15 or 112.",
+    "dir.title": "Practice directory", "dir.sub": "Publicly listed practices in France and Africa. Filter by profession, country or city.",
+    "dir.spec": "Specialty", "dir.country": "Country", "dir.city": "City", "dir.filter": "Filter",
+    "dir.empty": "No published practice matches these filters.",
+    "dir.book": "Book (demo)", "dir.contact": "Contact the practice", "dir.send": "Send",
+    "dir.hours": "Opening hours",
     "roi.title": "How much do missed calls cost you?", "roi.sub": "Adjust the assumptions or start from a specialty preset.",
     "roi.preset": "Specialty (preset)", "roi.missed": "Missed calls per day", "roi.new": "Share of new patients among them",
     "roi.conv": "Conversion rate to appointments", "roi.value": "Average value of a new patient (€)", "roi.days": "Working days per month",
-    "roi.k1": "New patients recovered / month", "roi.k2": "Revenue recovered / month", "roi.k3": "Return on investment (vs subscription)",
+    "roi.k1": "New patients recovered / month", "roi.k2": "Revenue recovered / month", "roi.k3": "Return on investment (vs Premium)",
     "roi.k4": "Subscription paid back in", "roi.note": "Indicative estimate based on your assumptions; presets are orders of magnitude, not statistics.",
-    "price.title": "One price, all included", "price.per": "/month",
-    "price.sub": "A price adapted to your country, payable in your currency: card, SEPA direct debit or mobile money depending on the region.",
-    "price.region": "Country / region", "price.subscribe": "Subscribe", "price.f_name": "Practice name", "price.f_phone": "Phone (optional)",
+    "price.title": "A Free plan and a Premium plan", "price.per": "/month excl. VAT",
+    "price.sub": "14-day Premium trial, no card. Then stay on Free or upgrade to Premium, at your country's rate (card, SEPA direct debit or mobile money).",
+    "price.freeName": "Free", "price.forever": "/month, for life",
+    "price.freeDesc": "Discover CareAssist and handle a small volume of calls.",
+    "price.startFree": "Create my practice",
+    "price.trialBadge": "14-day Premium trial, free",
+    "price.region": "Country / region", "price.subscribe": "Subscribe to Premium", "price.f_name": "Practice name", "price.f_phone": "Phone (optional)",
     "price.pay": "Continue to payment", "price.desc": "Unlimited calls for a solo practice or small group.",
     "price.l1": "24/7 AI receptionist, natural French voice", "price.l2": "Booking, rescheduling and cancellation",
-    "price.l3": "Emergency protocols for your specialty", "price.l4": "Custom FAQ (hours, access, reimbursements)",
-    "price.l5": "Calendar sync and dashboard", "price.l6": "Transfer to your staff", "price.l7": "No commitment, guided onboarding", "price.cta": "Request a demo first",
+    "price.l3": "SMS, WhatsApp and email, multiple users", "price.l4": "Dedicated VoIP number and automatic backups",
+    "price.l5": "Emergency protocols for your specialty", "price.l6": "Priority support, no commitment", "price.cta": "Request a demo first",
     "faq.title": "FAQ", "faq.q1": "Do I keep my number?", "faq.a1": "Yes. You just set call forwarding (on no-answer, busy or always) to your CareAssist line.",
     "faq.q2": "What happens in an emergency?", "faq.a2": "Emergency detection is deterministic and specialty-specific. Life-threatening signs trigger an immediate referral to the local emergency number (15 / 112 and 3114 in France, 1515 in Senegal, 119 in Cameroon…); non-vital emergencies get a same-day priority slot and are flagged to you.",
     "faq.q3": "Does CareAssist give medical advice?", "faq.a3": "No. It never diagnoses and does not replace a professional: it organizes, informs and routes. For psychologists, it never does therapy.",
     "faq.q4": "What about health data?", "faq.a4": "Data collection is minimal (name, phone, short reason). In production, hosting must be HDS-certified; we help with your GDPR register and patient notice.",
     "faq.q5": "Which calendars does it work with?", "faq.a5": "Google Calendar natively; practice software and booking platforms connect through their API when available.",
     "faq.q6": "Do patients know they're talking to an AI?", "faq.a6": "Yes, CareAssist introduces itself as the practice's virtual assistant and always offers a human.",
-    "lead.title": "Try CareAssist in your practice", "lead.sub": "Leave your details: we set up a demo in your name within 1 business day.",
+    "faq.q7": "What is the difference between Free and Premium?", "faq.a7": "The Free plan, for life, includes 30 AI conversations per month, one user, email reminders and the core calendar. Premium lifts every limit: unlimited calls, SMS and WhatsApp, multiple users, a VoIP number, backups and priority support. Every new practice starts with 14 days of Premium, no card required.",
+    "faq.q8": "What happens when the trial ends?", "faq.a8": "Without a subscription, the practice automatically switches to the Free plan. You can upgrade to Premium at any time from your space. An email is sent 3 days before the trial ends, then again on the day it ends.",
+    "lead.title": "Try CareAssist in your practice", "lead.sub": "Leave your details: we set up a demo in your name within 1 business day. The 14-day Premium trial does not require a card.",
     "lead.name": "Practice name", "lead.spec": "Specialty", "lead.phone": "Phone", "lead.msg": "Message (optional)",
     "lead.consent": "I agree to be contacted about CareAssist. My data is never sold.", "lead.cta": "Request my demo",
     "footer.slogan": "Never miss an appointment again. Your 24/7 AI receptionist for healthcare professionals.",
@@ -96,51 +115,99 @@
   let lang = localStorage.getItem("ca-lang") || "fr";
   $$("[data-i18n]").forEach(el => (FR[el.dataset.i18n] = el.textContent));
   $$("[data-i18n-ph]").forEach(el => (FR[el.dataset.i18nPh] = el.placeholder));
-  const t = k => (lang === "en" ? EN[k] : FR[k]) || FR[k] || k;
+  Object.assign(FR, {
+    "dir.book": "Réserver (démo)", "dir.contact": "Contacter le cabinet", "dir.send": "Envoyer",
+  });
+  const t = k => (lang === "en" ? (EN[k] || FR[k]) : (FR[k] || EN[k])) || k;
   function applyLang() {
     document.documentElement.lang = lang;
     $$("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
     $$("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
-    $("#lang-toggle").textContent = lang === "fr" ? "EN" : "FR";
-    renderPros(); renderTabs(); fillSelects(); renderROI(); if (typeof renderRegionSelect === "function" && $("#region-select").options.length) { renderRegionSelect(); renderPrice(); }
+    if ($("#lang-toggle")) $("#lang-toggle").textContent = lang === "fr" ? "EN" : "FR";
+    if ($("#pros-grid")) renderPros();
+    renderTabs();
+    if ($("#roi-preset") || $("#lead-spec") || $("#dir-spec")) fillSelects();
+    if ($("#r-missed")) renderROI();
+    if ($("#region-select") && $("#region-select").options.length) { renderRegionSelect(); renderPrice(); }
+    if ($("#dir-grid") && dirItems) renderDirectory(dirItems);
   }
-  $("#lang-toggle").addEventListener("click", () => { lang = lang === "fr" ? "en" : "fr"; localStorage.setItem("ca-lang", lang); applyLang(); });
+  const langBtn = $("#lang-toggle");
+  if (langBtn) langBtn.addEventListener("click", () => { lang = lang === "fr" ? "en" : "fr"; localStorage.setItem("ca-lang", lang); applyLang(); });
   const label = s => (lang === "en" ? s.en : s.fr);
+
+  // ------------------------------------------------------------ nav
+  const toggle = $(".nav-toggle");
+  const panel = $("#site-nav");
+  if (toggle && panel) {
+    const setOpen = open => {
+      panel.classList.toggle("open", open);
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      toggle.setAttribute("aria-label", open ? (lang === "en" ? "Close menu" : "Fermer le menu") : (lang === "en" ? "Open menu" : "Ouvrir le menu"));
+    };
+    toggle.addEventListener("click", () => setOpen(!panel.classList.contains("open")));
+    $$("#site-nav a").forEach(a => a.addEventListener("click", () => setOpen(false)));
+    document.addEventListener("keydown", e => { if (e.key === "Escape") setOpen(false); });
+  }
+  $$("[data-nav]").forEach(a => { if (a.dataset.nav === page) a.classList.add("active"); });
 
   // ------------------------------------------------------------ métiers
   function renderPros() {
-    $("#pros-grid").innerHTML = SPECS.map(s => `
+    const grid = $("#pros-grid"); if (!grid) return;
+    grid.innerHTML = SPECS.map(s => `
       <article class="pro" data-key="${s.key}" tabindex="0">
-        <picture class="pro-photo"><source srcset="img/${s.key}.webp" type="image/webp" /><img src="img/${s.key}.jpg" width="900" height="675" loading="lazy" alt="${label(s)}" /></picture>
+        <picture class="pro-photo"><source srcset="/img/${s.key}.webp" type="image/webp" /><img src="/img/${s.key}.jpg" width="900" height="675" loading="lazy" alt="${label(s)}" /></picture>
         <div class="pro-body"><div class="icon">${caIcon(s.icon)}</div><h3>${label(s)}</h3><p>${lang === "en" ? s.desc_en : s.desc_fr}</p>
-        <span class="pro-link">${lang === "en" ? "Try the demo" : "Tester la démo"} ${caIcon("arrowRight")}</span></div>
+        <a class="pro-link" href="/demo?practice=${s.key}">${lang === "en" ? "Try the demo" : "Tester la démo"} ${caIcon("arrowRight")}</a></div>
       </article>`).join("");
-    $$(".pro").forEach(el => el.addEventListener("click", () => { selectSpec(el.dataset.key); $("#demo").scrollIntoView(); }));
+    $$(".pro").forEach(el => el.addEventListener("click", e => {
+      if (e.target.closest("a")) return;
+      location.href = "/specialites#" + el.dataset.key;
+    }));
   }
 
-  // ------------------------------------------------------------ démo / chat
+  // ------------------------------------------------------------ démo / chat / spécialités
   let current = SPECS[0];
+  const params = new URLSearchParams(location.search);
+  const wanted = params.get("practice") || params.get("s") || (location.hash || "").replace("#", "");
+  if (wanted) current = SPECS.find(s => s.key === wanted) || current;
   let sessionId = null;
   let online = false;
   const body = $("#chat-body");
 
   function renderTabs() {
-    $("#spec-tabs").innerHTML = SPECS.map(s =>
-      `<button class="spec-tab" role="tab" aria-selected="${s.key === current.key}" data-key="${s.key}">${caIcon(s.icon)} ${label(s)}</button>`).join("");
-    $$(".spec-tab").forEach(b => b.addEventListener("click", () => selectSpec(b.dataset.key)));
+    for (const id of ["#spec-tabs", "#spec-page-tabs"]) {
+      const el = $(id); if (!el) continue;
+      el.innerHTML = SPECS.map(s =>
+        `<button class="spec-tab" role="tab" aria-selected="${s.key === current.key}" data-key="${s.key}">${caIcon(s.icon)} ${label(s)}</button>`).join("");
+      $$(".spec-tab", el).forEach(b => b.addEventListener("click", () => selectSpec(b.dataset.key)));
+    }
+    if ($("#spec-page")) renderSpecPanel();
+  }
+  function renderSpecPanel() {
+    const panelEl = $("#spec-page"); if (!panelEl) return;
+    const s = current;
+    panelEl.innerHTML = `<picture><source srcset="/img/${s.key}.webp" type="image/webp" /><img src="/img/${s.key}.jpg" width="900" height="675" alt="${label(s)}" /></picture>
+      <div><h2>${label(s)}</h2><p>${lang === "en" ? s.desc_en : s.desc_fr}</p>
+      <div class="hero-ctas"><a class="btn btn-primary" href="/demo?practice=${s.key}">${lang === "en" ? "Try the demo" : "Tester la démo"}</a>
+      <a class="btn btn-outline" href="/contact">${lang === "en" ? "Request a demo" : "Demander une démo"}</a></div></div>`;
   }
   function selectSpec(key) {
     current = SPECS.find(s => s.key === key) || SPECS[0];
-    renderTabs(); resetChat();
+    renderTabs();
+    if (body) resetChat();
     const sel = $("#roi-preset"); if (sel) { sel.value = current.key; loadPreset(current.key); }
+    if (page === "specialites") history.replaceState(null, "", "#" + current.key);
   }
   function resetChat() {
+    if (!body) return;
     sessionId = "web-" + Math.random().toString(36).slice(2, 10);
     body.innerHTML = "";
-    $("#chat-practice").textContent = current.practice + " (démo)";
+    if ($("#chat-practice")) $("#chat-practice").textContent = current.practice + " (démo)";
     addMsg("bot", `Bonjour, ${current.practice}, je suis l'assistante virtuelle du cabinet. Comment puis-je vous aider ?`);
-    $("#chips").innerHTML = current.examples.map(e => `<button class="chip" type="button">${e}</button>`).join("");
-    $$(".chip").forEach(c => c.addEventListener("click", () => send(c.textContent)));
+    if ($("#chips")) {
+      $("#chips").innerHTML = current.examples.map(e => `<button class="chip" type="button">${e}</button>`).join("");
+      $$(".chip").forEach(c => c.addEventListener("click", () => send(c.textContent)));
+    }
   }
   function addMsg(who, text, level) {
     const d = document.createElement("div");
@@ -157,9 +224,9 @@
     return d;
   }
   async function send(text) {
-    text = (text || "").trim(); if (!text) return;
+    text = (text || "").trim(); if (!text || !body) return;
     addMsg("user", text);
-    $("#chat-text").value = "";
+    if ($("#chat-text")) $("#chat-text").value = "";
     const typing = document.createElement("div"); typing.className = "typing"; typing.textContent = "CareAssist écrit…";
     body.appendChild(typing); body.scrollTop = body.scrollHeight;
     let res;
@@ -175,15 +242,15 @@
     const lvl = res.emergency && res.emergency.level !== "none" ? res.emergency.level : (res.intent === "booked" ? "ok" : null);
     addMsg("bot", res.reply, lvl);
   }
-  $("#chat-form").addEventListener("submit", e => { e.preventDefault(); send($("#chat-text").value); });
-  $("#chat-reset").addEventListener("click", resetChat);
+  if ($("#chat-form")) $("#chat-form").addEventListener("submit", e => { e.preventDefault(); send($("#chat-text").value); });
+  if ($("#chat-reset")) $("#chat-reset").addEventListener("click", resetChat);
   function setStatus(on, engine) {
-    online = on; const s = $("#chat-status");
+    const s = $("#chat-status"); if (!s) return;
+    online = on;
     s.className = "status " + (on ? "on" : "off");
     s.textContent = on ? `En ligne — moteur CareAssist (${engine || "rules"})` : "Mode hors ligne — réponses simulées (lancez le backend)";
   }
 
-  // Repli hors ligne : mini-moteur de règles côté navigateur
   const norm = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[’`]/g, "'");
   let offlineStep = 0;
   function offlineReply(text) {
@@ -207,16 +274,22 @@
   const eur = n => new Intl.NumberFormat(lang === "en" ? "en-GB" : "fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
   function fillSelects() {
     const opts = SPECS.map(s => `<option value="${s.key}">${label(s)}</option>`).join("");
-    const pv = $("#roi-preset").value || current.key, lv = $("#lead-spec").value;
-    $("#roi-preset").innerHTML = opts; $("#roi-preset").value = pv;
-    $("#lead-spec").innerHTML = opts + `<option value="autre">${lang === "en" ? "Other" : "Autre"}</option>`; if (lv) $("#lead-spec").value = lv;
+    if ($("#roi-preset")) { const pv = $("#roi-preset").value || current.key; $("#roi-preset").innerHTML = opts; $("#roi-preset").value = pv; }
+    if ($("#lead-spec")) { const lv = $("#lead-spec").value; $("#lead-spec").innerHTML = opts + `<option value="autre">${lang === "en" ? "Other" : "Autre"}</option>`; if (lv) $("#lead-spec").value = lv; }
+    if ($("#dir-spec")) {
+      const cur = $("#dir-spec").value;
+      $("#dir-spec").innerHTML = `<option value="">${lang === "en" ? "All" : "Toutes"}</option>` + opts;
+      if (cur) $("#dir-spec").value = cur;
+    }
   }
   function loadPreset(key) {
+    if (!R("missed")) return;
     const p = (SPECS.find(s => s.key === key) || SPECS[0]).roi;
     R("missed").value = p.missed_calls; R("new").value = p.new_share; R("conv").value = p.conversion; R("value").value = p.value;
     renderROI();
   }
   function renderROI() {
+    if (!R("missed")) return;
     const missed = +R("missed").value, nw = +R("new").value, conv = +R("conv").value, value = +R("value").value, days = +R("days").value;
     $("#o-missed").textContent = missed; $("#o-new").textContent = nw + " %"; $("#o-conv").textContent = conv + " %";
     $("#o-value").textContent = eur(value); $("#o-days").textContent = days;
@@ -229,11 +302,11 @@
     const perDay = revenue / days;
     $("#k-payback").textContent = perDay > 0 ? (Math.ceil(subEur / perDay) + (lang === "en" ? " working day(s)" : " jour(s) ouvré(s)")) : "–";
   }
-  $("#roi-preset").addEventListener("change", e => loadPreset(e.target.value));
+  if ($("#roi-preset")) $("#roi-preset").addEventListener("change", e => loadPreset(e.target.value));
   $$(".roi-inputs input[type=range]").forEach(i => i.addEventListener("input", renderROI));
 
   // ------------------------------------------------------------ lead
-  $("#lead-form").addEventListener("submit", async e => {
+  if ($("#lead-form")) $("#lead-form").addEventListener("submit", async e => {
     e.preventDefault();
     const f = e.target, msg = $("#lead-msg");
     const data = Object.fromEntries(new FormData(f).entries());
@@ -248,11 +321,10 @@
     } catch (err) {
       msg.classList.add("err");
       msg.textContent = (err instanceof TypeError)
-        ? (lang === "en" ? "Server unreachable: please email us at contact@getcareassist.com." : "Serveur injoignable : écrivez-nous à contact@getcareassist.com.")
+        ? (lang === "en" ? "Server unreachable: please email us at " + CONTACT_EMAIL + "." : "Serveur injoignable : écrivez-nous à " + CONTACT_EMAIL + ".")
         : (lang === "en" ? "Please check your details: " : "Vérifiez vos informations : ") + err.message;
     }
   });
-
 
   // ------------------------------------------------------------ tarification régionale + paiement
   const FALLBACK_PRICING = { regions: [{ key: "europe", label: "Europe (zone euro)", label_en: "Europe (euro area)", currency: "EUR", amount: 299,
@@ -278,19 +350,26 @@
     return r ? r.key : PRICING.reference_region;
   }
   function renderRegionSelect() {
-    const sel = $("#region-select");
+    const sel = $("#region-select"); if (!sel) return;
     sel.innerHTML = PRICING.regions.map(r => `<option value="${r.key}">${lang === "en" ? r.label_en : r.label}</option>`).join("");
     sel.value = currentRegion.key;
   }
+  function renderFreeFeatures() {
+    const ul = $("#plan-free-features");
+    if (!ul || !PRICING.plans || !PRICING.plans.free) return;
+    const feats = lang === "en" ? PRICING.plans.free.features_en : PRICING.plans.free.features_fr;
+    if (feats && feats.length) ul.innerHTML = feats.map(f => `<li>${f}</li>`).join("");
+  }
   function renderPrice() {
     const r = currentRegion;
-    $("#price-amount").textContent = money(r.amount, r.currency);
-    $("#hero-price").textContent = money(r.amount, r.currency);
-    $("#price-per").textContent = (lang === "en" ? "/month" : "/mois") + (r.currency === "EUR" && r.reference ? (lang === "en" ? " excl. VAT" : " HT") : "");
-    $("#price-approx").textContent = r.reference ? (lang === "en" ? "Reference price" : "Tarif de référence")
+    if ($("#price-amount")) $("#price-amount").textContent = money(r.amount, r.currency);
+    if ($("#hero-price")) $("#hero-price").textContent = money(r.amount, r.currency);
+    if ($("#price-per")) $("#price-per").textContent = (lang === "en" ? "/month" : "/mois") + (r.currency === "EUR" && r.reference ? (lang === "en" ? " excl. VAT" : " HT") : "");
+    if ($("#price-approx")) $("#price-approx").textContent = r.reference ? (lang === "en" ? "Reference price" : "Tarif de référence")
       : (lang === "en" ? `Regional price, approx. ${r.approx_eur} EUR` : `Tarif régional, soit environ ${r.approx_eur} EUR`);
-    $("#price-methods").innerHTML = (r.methods || []).map(m => `<span class="method">${caIcon("check")} ${m}</span>`).join("");
-    $("#price-note").textContent = r.methods_note || "";
+    if ($("#price-methods")) $("#price-methods").innerHTML = (r.methods || []).map(m => `<span class="method">${caIcon("check")} ${m}</span>`).join("");
+    if ($("#price-note")) $("#price-note").textContent = r.methods_note || "";
+    renderFreeFeatures();
     renderROI();
   }
   function setRegion(key, manual) {
@@ -298,7 +377,7 @@
     if (manual) localStorage.setItem("ca-region", currentRegion.key);
     renderRegionSelect(); renderPrice();
   }
-  $("#region-select").addEventListener("change", e => setRegion(e.target.value, true));
+  if ($("#region-select")) $("#region-select").addEventListener("change", e => setRegion(e.target.value, true));
   async function initPricing() {
     try {
       const r = await fetch(API + "/api/pricing");
@@ -308,11 +387,11 @@
     const saved = localStorage.getItem("ca-region");
     const country = guessCountry();
     const key = saved && PRICING.regions.some(r => r.key === saved) ? saved : regionForCountry(country);
-    $("#region-guess").textContent = saved ? "" : (country ? (lang === "en" ? `Detected: ${country === "EU" ? "Europe" : country}` : `Détecté : ${country === "EU" ? "Europe" : country}`) : "");
+    if ($("#region-guess")) $("#region-guess").textContent = saved ? "" : (country ? (lang === "en" ? `Detected: ${country === "EU" ? "Europe" : country}` : `Détecté : ${country === "EU" ? "Europe" : country}`) : "");
     setRegion(key, false);
   }
-  $("#subscribe-open").addEventListener("click", () => { $("#checkout-form").hidden = false; $("#subscribe-open").hidden = true; });
-  $("#checkout-form").addEventListener("submit", async e => {
+  if ($("#subscribe-open")) $("#subscribe-open").addEventListener("click", () => { $("#checkout-form").hidden = false; $("#subscribe-open").hidden = true; });
+  if ($("#checkout-form")) $("#checkout-form").addEventListener("submit", async e => {
     e.preventDefault();
     const f = e.target, msg = $("#checkout-msg");
     msg.className = "form-msg";
@@ -329,11 +408,119 @@
       setTimeout(() => { location.href = j.checkout_url; }, 600);
     } catch (err) {
       msg.classList.add("err");
-      msg.textContent = (err instanceof TypeError) ? (lang === "en" ? "Server unreachable: contact@getcareassist.com" : "Serveur injoignable : contact@getcareassist.com") : String(err.message);
+      msg.textContent = (err instanceof TypeError) ? (lang === "en" ? "Server unreachable: " + CONTACT_EMAIL : "Serveur injoignable : " + CONTACT_EMAIL) : String(err.message);
     }
   });
 
+  // ------------------------------------------------------------ annuaire
+  let dirItems = null;
+  function renderDirectory(items) {
+    const grid = $("#dir-grid"); if (!grid) return;
+    dirItems = items;
+    const empty = $("#dir-empty");
+    if (!items.length) { grid.innerHTML = ""; if (empty) empty.hidden = false; return; }
+    if (empty) empty.hidden = true;
+    grid.innerHTML = items.map(p => {
+      const img = p.has_logo ? `/api/directory/${p.slug}/logo` : `/img/${p.specialty || "praticien"}.jpg`;
+      const loc = [p.city, p.country_name || p.country].filter(Boolean).join(", ");
+      const tel = p.phone ? `<a href="tel:${p.phone}">${p.phone}</a>` : "";
+      const mail = p.email ? `<a href="mailto:${p.email}">${p.email}</a>` : "";
+      const book = p.is_demo
+        ? `<a class="btn btn-primary btn-sm" href="/demo?practice=${p.specialty}">${t("dir.book")}</a>`
+        : `<button type="button" class="btn btn-outline btn-sm" data-contact="${p.slug}">${t("dir.contact")}</button>`;
+      const form = p.is_demo ? "" : `<form class="dir-contact" data-form="${p.slug}" hidden>
+            <input name="name" required minlength="2" placeholder="${lang === "en" ? "Your name" : "Votre nom"}" />
+            <input name="email" type="email" required placeholder="vous@exemple.fr" />
+            <input name="phone" type="tel" placeholder="${lang === "en" ? "Phone (optional)" : "Téléphone (facultatif)"}" />
+            <textarea name="message" required minlength="5" rows="3" placeholder="${lang === "en" ? "Your message" : "Votre message"}"></textarea>
+            <button class="btn btn-primary btn-sm" type="submit">${t("dir.send")}</button>
+            <p class="form-msg" role="status"></p>
+          </form>`;
+      return `<article class="dir-card">
+        <img src="${img}" alt="${p.name}" onerror="this.src='/img/praticien.jpg'" />
+        <div class="body">
+          <h3>${p.name}</h3>
+          <p class="meta">${p.specialty_label || p.specialty} · ${loc}</p>
+          <p class="hours">${p.hours || ""}</p>
+          <p class="meta">${[tel, mail].filter(Boolean).join(" · ")}</p>
+          <div class="actions">${book}</div>
+          ${form}
+        </div>
+      </article>`;
+    }).join("");
+    $$("[data-contact]").forEach(b => b.addEventListener("click", () => {
+      const f = document.querySelector(`[data-form="${b.dataset.contact}"]`);
+      if (f) f.hidden = !f.hidden;
+    }));
+    $$("form.dir-contact").forEach(f => f.addEventListener("submit", async e => {
+      e.preventDefault();
+      const msg = f.querySelector(".form-msg");
+      msg.className = "form-msg";
+      const data = Object.fromEntries(new FormData(f).entries());
+      try {
+        const r = await fetch(API + "/api/directory/" + f.dataset.form + "/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j.detail || r.status);
+        msg.classList.add("ok"); msg.textContent = j.message || (lang === "en" ? "Message sent." : "Message envoyé.");
+        f.reset();
+      } catch (err) {
+        msg.classList.add("err"); msg.textContent = err.message;
+      }
+    }));
+  }
+  async function initDirectory() {
+    if (!$("#dir-grid")) return;
+    const qs = new URLSearchParams(location.search);
+    if ($("#dir-spec") && qs.get("specialty")) $("#dir-spec").value = qs.get("specialty");
+    if ($("#dir-country") && qs.get("country")) $("#dir-country").value = qs.get("country");
+    if ($("#dir-city") && qs.get("city")) $("#dir-city").value = qs.get("city");
+    try {
+      const countries = await fetch(API + "/api/countries").then(r => r.json());
+      const sel = $("#dir-country");
+      if (sel && countries.countries) {
+        const cur = sel.value || qs.get("country") || "";
+        sel.innerHTML = `<option value="">${lang === "en" ? "All" : "Tous"}</option>` +
+          countries.countries.map(c => `<option value="${c.code}">${c.name}</option>`).join("");
+        if (cur) sel.value = cur;
+      }
+    } catch (e) { /* ignore */ }
+    const q = new URLSearchParams();
+    const spec = $("#dir-spec") && $("#dir-spec").value;
+    const country = $("#dir-country") && $("#dir-country").value;
+    const city = $("#dir-city") && $("#dir-city").value;
+    if (spec) q.set("specialty", spec);
+    if (country) q.set("country", country);
+    if (city) q.set("city", city);
+    try {
+      const r = await fetch(API + "/api/directory" + (q.toString() ? "?" + q : ""));
+      const j = await r.json();
+      renderDirectory(j.practices || []);
+    } catch (e) {
+      renderDirectory([]);
+    }
+  }
+  if ($("#dir-filters")) $("#dir-filters").addEventListener("submit", e => {
+    e.preventDefault();
+    const q = new URLSearchParams();
+    if ($("#dir-spec").value) q.set("specialty", $("#dir-spec").value);
+    if ($("#dir-country").value) q.set("country", $("#dir-country").value);
+    if ($("#dir-city").value) q.set("city", $("#dir-city").value);
+    history.replaceState(null, "", "/cabinets" + (q.toString() ? "?" + q : ""));
+    initDirectory();
+  });
+
+  window.addEventListener("hashchange", () => {
+    if (page !== "specialites") return;
+    const key = (location.hash || "").replace("#", "");
+    if (key && key !== current.key) selectSpec(key);
+  });
+
   // ------------------------------------------------------------ init
-  fillSelects(); loadPreset(current.key); applyLang(); resetChat(); initPricing();
-  fetch(API + "/health").then(r => r.json()).then(j => setStatus(true, j.llm)).catch(() => setStatus(false));
+  fillSelects();
+  if ($("#r-missed")) loadPreset(current.key);
+  applyLang();
+  if (body) resetChat();
+  initPricing();
+  initDirectory();
+  if ($("#chat-status")) fetch(API + "/health").then(r => r.json()).then(j => setStatus(true, j.llm)).catch(() => setStatus(false));
 })();

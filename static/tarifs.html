@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tarifs — CareAssist</title>
+  <meta name="description" content="Plan Gratuit à vie et Premium (299 €/mois en Europe, tarifs régionaux en Afrique). Essai Premium 14 jours sans carte." />
+  <meta name="theme-color" content="#0e7c86" />
+  <link rel="canonical" href="https://getcareassist.com/tarifs" />
+  <link rel="alternate" hreflang="fr" href="https://getcareassist.com/tarifs" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://getcareassist.com/tarifs" />
+  <meta property="og:site_name" content="CareAssist" />
+  <meta property="og:image" content="https://getcareassist.com/img/hero-reception.jpg" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta property="og:title" content="Tarifs — CareAssist" />
+  <meta property="og:description" content="Plan Gratuit à vie et Premium (299 €/mois en Europe, tarifs régionaux en Afrique). Essai Premium 14 jours sans carte." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css?v=8" />
+</head>
+<body data-page="tarifs">
+<a class="skip-link" href="#main">Aller au contenu</a>
+<header class="nav">
+  <div class="container nav-inner">
+    <a href="/" class="logo"><span class="logo-mark"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span> CareAssist</a>
+    <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Ouvrir le menu"><span></span><span></span><span></span></button>
+    <nav id="site-nav" class="nav-panel">
+      <div class="nav-links">
+        <a href="/" data-nav="accueil" data-i18n="nav.home">Accueil</a>
+        <a href="/fonctionnalites" data-nav="fonctionnalites" data-i18n="nav.features">Fonctionnalités</a>
+        <a href="/specialites" data-nav="specialites" data-i18n="nav.pros">Spécialités</a>
+        <a href="/cabinets" data-nav="cabinets" data-i18n="nav.directory">Cabinets</a>
+        <a href="/tarifs" data-nav="tarifs" data-i18n="nav.pricing">Tarifs</a>
+        <a href="/demo" data-nav="demo" data-i18n="nav.demo">Démo</a>
+        <a href="/faq" data-nav="faq">FAQ</a>
+        <a href="/contact" data-nav="contact" data-i18n="nav.contact">Contact</a>
+      </div>
+      <div class="nav-actions">
+        <button id="lang-toggle" class="btn-ghost" aria-label="Changer de langue">EN</button>
+        <a href="/espace" class="btn-ghost nav-login" data-i18n="nav.login">Connexion</a>
+        <a href="/contact" class="btn btn-primary btn-sm" data-i18n="nav.cta">Essai gratuit</a>
+      </div>
+    </nav>
+  </div>
+</header>
+<main id="main">
+
+  <section class="page-head"><div class="container"><h1 data-i18n="price.title">Un plan Gratuit, un plan Premium</h1><p class="section-sub" data-i18n="price.sub">Essai Premium 14 jours, sans carte. Ensuite, restez en Gratuit ou passez à Premium, au tarif de votre pays (carte, prélèvement SEPA ou mobile money).</p></div></section>
+  <section class="section"><div class="container">
+    <div class="plans-grid">
+      <article class="plan-card">
+        <h2 data-i18n="price.freeName">Gratuit</h2>
+        <p class="price"><span>0 €</span><small data-i18n="price.forever">/mois, à vie</small></p>
+        <p data-i18n="price.freeDesc">Pour découvrir CareAssist et gérer un petit volume d'appels.</p>
+        <ul id="plan-free-features">
+          <li>30 conversations IA par mois (appels ou chat)</li>
+          <li>1 utilisateur (le titulaire)</li>
+          <li>Rappels par e-mail uniquement</li>
+          <li>Agenda et fiches patients</li>
+          <li>Badge « Propulsé par CareAssist »</li>
+        </ul>
+        <a href="/contact" class="btn btn-outline btn-block" data-i18n="price.startFree">Créer mon cabinet</a>
+      </article>
+      <article class="plan-card featured">
+        <div class="plan-badge" data-i18n="price.trialBadge">Essai Premium 14 jours gratuit</div>
+        <h2>Premium</h2>
+        <p class="price"><span id="price-amount">299 €</span><small id="price-per" data-i18n="price.per">/mois HT</small></p>
+        <p id="price-approx" class="small"></p>
+        <div class="region-picker">
+          <label for="region-select"><svg class="i" data-icon="globe"></svg> <span data-i18n="price.region">Pays / région</span></label>
+          <select id="region-select"></select>
+          <small id="region-guess" class="small"></small>
+        </div>
+        <p data-i18n="price.desc">Appels illimités pour un cabinet solo ou un petit groupe.</p>
+        <ul>
+          <li data-i18n="price.l1">Réceptionniste IA 24/7, voix naturelle en français</li>
+          <li data-i18n="price.l2">Prise, report et annulation de rendez-vous</li>
+          <li data-i18n="price.l3">SMS, WhatsApp et e-mail, plusieurs utilisateurs</li>
+          <li data-i18n="price.l4">Numéro VoIP dédié et sauvegardes automatiques</li>
+          <li data-i18n="price.l5">Protocoles d'urgence propres à votre spécialité</li>
+          <li data-i18n="price.l6">Support prioritaire, sans engagement</li>
+        </ul>
+        <div class="methods" id="price-methods"></div>
+        <p id="price-note" class="small"></p>
+        <button type="button" id="subscribe-open" class="btn btn-primary btn-block" data-i18n="price.subscribe">S'abonner au Premium</button>
+        <form id="checkout-form" class="checkout-form" hidden novalidate>
+          <input name="practice_name" required minlength="2" placeholder="Nom du cabinet" data-i18n-ph="price.f_name" />
+          <input name="email" type="email" required placeholder="cabinet@exemple.fr" />
+          <input name="phone" type="tel" placeholder="Téléphone (facultatif)" data-i18n-ph="price.f_phone" />
+          <button class="btn btn-primary btn-block" type="submit" data-i18n="price.pay">Continuer vers le paiement</button>
+          <p id="checkout-msg" class="form-msg" role="status"></p>
+        </form>
+        <a href="/contact" class="btn btn-outline btn-block" style="margin-top:10px" data-i18n="price.cta">Demander une démo d'abord</a>
+      </article>
+    </div>
+  </div></section>
+  <section class="section alt" id="roi"><div class="container">
+    <h2 data-i18n="roi.title">Combien vous coûtent vos appels manqués ?</h2>
+    <p class="section-sub" data-i18n="roi.sub">Ajustez les hypothèses ou partez d'un préréglage par spécialité.</p>
+    <div class="roi">
+      <div class="roi-inputs">
+        <label><span data-i18n="roi.preset">Spécialité (préréglage)</span><select id="roi-preset"></select></label>
+        <label><span data-i18n="roi.missed">Appels manqués par jour</span> <output id="o-missed"></output><input type="range" id="r-missed" min="1" max="60" step="1" /></label>
+        <label><span data-i18n="roi.new">Part de nouveaux patients parmi ces appels</span> <output id="o-new"></output><input type="range" id="r-new" min="5" max="100" step="5" /></label>
+        <label><span data-i18n="roi.conv">Taux de conversion en rendez-vous</span> <output id="o-conv"></output><input type="range" id="r-conv" min="10" max="100" step="5" /></label>
+        <label><span data-i18n="roi.value">Valeur moyenne d'un nouveau patient (€)</span> <output id="o-value"></output><input type="range" id="r-value" min="30" max="3000" step="10" /></label>
+        <label><span data-i18n="roi.days">Jours ouvrés par mois</span> <output id="o-days"></output><input type="range" id="r-days" min="10" max="26" step="1" value="21" /></label>
+      </div>
+      <div class="roi-results">
+        <div class="kpi"><span data-i18n="roi.k1">Nouveaux patients récupérés / mois</span><strong id="k-patients">0</strong></div>
+        <div class="kpi big"><span data-i18n="roi.k2">Chiffre d'affaires récupéré / mois</span><strong id="k-revenue">0 €</strong></div>
+        <div class="kpi"><span data-i18n="roi.k3">Retour sur investissement (vs Premium)</span><strong id="k-roi">×0</strong></div>
+        <div class="kpi"><span data-i18n="roi.k4">Abonnement rentabilisé en</span><strong id="k-payback">–</strong></div>
+        <p class="note" data-i18n="roi.note">Estimation indicative fondée sur vos hypothèses ; les préréglages sont des ordres de grandeur, pas des statistiques.</p>
+      </div>
+    </div>
+  </div></section>
+</main>
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><span class="logo"><span class="logo-mark"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span> CareAssist</span>
+      <p data-i18n="footer.slogan">Ne manquez plus jamais un rendez-vous. Votre réceptionniste IA 24/7 pour les professionnels de santé.</p></div>
+    <p class="small" data-i18n="footer.legal">CareAssist n'est pas un dispositif médical et ne remplace pas les services d'urgence. En France : urgence 15 / 112, prévention du suicide 3114. Ailleurs : numéros d'urgence de votre pays.</p>
+    <div class="small">
+      <a href="mailto:saurellenguefack543@gmail.com">saurellenguefack543@gmail.com</a><br />
+      <a href="tel:+33605508542">06 05 50 85 42</a> · getcareassist.com<br />
+      <a href="/espace">Espace cabinet</a> · <a href="/cabinets">Annuaire</a> · <a href="/img/CREDITS.md">Crédits photos (Pexels)</a>
+    </div>
+  </div>
+</footer>
+<script src="/icons.js?v=4"></script>
+<script src="/app.js?v=8"></script>
+</body>
+</html>

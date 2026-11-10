@@ -1,6 +1,6 @@
 # CareAssist
 
-Site : **https://getcareassist.com** · Contact : **contact@getcareassist.com**
+Site : **https://getcareassist.com** · Contact : **saurellenguefack543@gmail.com** · **06 05 50 85 42**
 
 > **Ne manquez plus jamais un rendez-vous. Votre réceptionniste IA 24/7 pour les professionnels de santé.**
 
@@ -14,8 +14,7 @@ Chaque cabinet a son **espace** (patients, agenda, appels, messages, sauvegardes
 patient + praticien, un **numéro VoIP cloud** (Twilio, Vonage, Africa's Talking) et un **profil pays**
 (fuseau, téléphone, canaux, urgences locales vérifiées) : France, Sénégal, Côte d'Ivoire, Cameroun…
 
-Offre : **un seul plan, appels illimités pour un cabinet solo ou un petit groupe** — 299 €/mois en Europe (référence),
-tarifs régionaux en devise locale pour l'Afrique (prix indicatifs à valider, voir [Tarifs régionaux et paiements](#tarifs-régionaux-et-paiements)).
+Offre : un **plan Gratuit** à vie (30 conversations IA par mois, 1 utilisateur, rappels par e-mail, badge « Propulsé par CareAssist ») et un **plan Premium** aux tarifs régionaux — 299 €/mois HT en Europe (référence), devises locales en Afrique (voir [Tarifs régionaux et paiements](#tarifs-régionaux-et-paiements)). Tout nouveau cabinet démarre avec **14 jours de Premium, sans carte**, puis bascule automatiquement sur le Gratuit s'il ne s'abonne pas.
 
 ## Pourquoi ce projet
 
@@ -85,17 +84,21 @@ careassist-mvp/
 │   ├── messaging.py         # envoi SMS / WhatsApp / e-mail (Twilio, Vonage, Africa's Talking, SMTP) + mode démo
 │   ├── notifications.py     # confirmations, rappels J-1/H-2, heures de silence, réponses OUI/ANNULER/STOP
 │   ├── scheduler.py         # APScheduler : rappels, sauvegardes, créneaux, rétention
-│   ├── backup.py            # sauvegarde SQLite à chaud, rotation, restauration
+│   ├── backup.py            # sauvegarde SQLite à chaud ou pg_dump, rotation, restauration
 │   ├── retention.py         # purge RGPD des journaux techniques
 │   ├── cli.py               # python -m app.cli send-reminders | backup | restore | purge | create-user | seed
 │   ├── seed.py              # cabinets de démo FR / Sénégal / Cameroun, comptes, patients et RDV fictifs
-│   ├── db.py                # schéma SQLite + migrations légères
+│   ├── db.py                # SQLite (local) ou PostgreSQL (DATABASE_URL), schéma et migrations portables
+│   ├── plans.py             # forfaits Gratuit / Premium, essai 14 jours, quotas
+│   ├── directory.py         # annuaire public : validation, auto-publication 48 h, données publiques
 │   └── config.py            # variables d'environnement, nom produit, slogan
 ├── static/
-│   ├── index.html, styles.css, app.js   # landing page (FR/EN, démo, ROI, tarif, FAQ, formulaire)
+│   ├── index.html, fonctionnalites.html, specialites.html, cabinets.html,
+│   │   tarifs.html, demo.html, faq.html, contact.html  # pages publiques + nav sticky
+│   ├── styles.css, app.js               # styles et i18n FR/EN, démo, ROI, tarifs, annuaire
 │   ├── admin.html, admin.js             # tableau de bord super-admin /admin
 │   ├── espace.html, espace.css, espace.js  # espace cabinet /espace
-│   ├── icons.js, favicon.svg            # icônes SVG inline (aucun emoji, aucune dépendance)
+│   ├── icons.js, favicon.svg, sitemap.xml
 │   └── img/                             # photos Pexels optimisées (WebP + JPG) + CREDITS.md
 ├── tests/                   # pytest : réservation, urgences par spécialité, chat, leads, voix, paiements
 ├── data/                    # base SQLite (créée au démarrage)
@@ -323,6 +326,11 @@ Chaque cabinet dispose de **son propre espace** sur `/espace` : base patients, a
 messages, notifications, équipe, horaires, paramètres, exports et sauvegardes. Toutes les requêtes de l'espace
 sont filtrées par `practice_id` côté serveur (le cabinet vient de la session, jamais du client) : un cabinet ne
 peut ni lire ni modifier les données d'un autre (tests `tests/test_espace.py::test_tenant_isolation*`).
+Dans les paramètres, le titulaire configure le nom, l'adresse, le téléphone et l'e-mail, le logo, la spécialité,
+le pays, les horaires, l'équipe et les rôles, le numéro VoIP, les rappels (délais et canaux), les questions fréquentes
+personnalisées, le contact d'urgence, et la visibilité dans l'annuaire public. Ces informations sont reprises par
+l'assistante et les notifications. Le bandeau de l'espace indique le forfait, les jours d'essai restants, et un bouton
+pour passer au Premium.
 
 | Rôle | Droits |
 |---|---|
@@ -340,7 +348,11 @@ peut ni lire ni modifier les données d'un autre (tests `tests/test_espace.py::t
 - **Agenda** : vue semaine et vue liste ; statuts `confirmed`, `reminded`, `honored`, `no_show`, `cancelled` ;
   création, déplacement sur un créneau libre, annulation (avec notifications).
 - **Inscription** d'un nouveau cabinet : formulaire « Créer l'espace de mon cabinet » (pays, spécialité, fuseau
-  déduit du pays) → cabinet, titulaire, praticien, horaires par défaut et créneaux sur 14 jours.
+  déduit du pays) → cabinet, titulaire, praticien, horaires par défaut, créneaux sur 14 jours, **essai Premium de 14 jours**
+  et fiche d'annuaire en attente de validation (publication automatique au bout de 48 h si personne n'intervient).
+- **Annuaire public** (`/cabinets`) : les cabinets publiés (démos incluses) apparaissent avec nom, spécialité, ville,
+  pays, photo ou logo, téléphone et e-mail publics, horaires. Le titulaire peut retirer sa fiche (« Visible dans l'annuaire »).
+  `/admin` permet d'approuver ou de refuser une fiche. Aucune donnée patient n'est exposée.
 - `/admin` reste la vue **super-admin** (tous cabinets), protégée par `ADMIN_TOKEN`.
 
 ### Comptes de démo
@@ -442,8 +454,8 @@ Exécution : APScheduler dans le processus web (`SCHEDULER_ENABLED=1`, toutes le
 
 - **Export du cabinet** (titulaire, secrétariat) depuis l'espace : JSON complet ou archive ZIP de CSV
   (protégés contre l'injection de formules tableur). Export RGPD par patient.
-- **Sauvegarde quotidienne** de la base SQLite (API de sauvegarde à chaud de sqlite3, fichiers `chmod 600`),
-  rotation (`BACKUP_KEEP`, 7 par défaut) dans `BACKUP_DIR` (`data/backups` par défaut).
+- **Sauvegarde quotidienne** : copie SQLite à chaud, ou `pg_dump` si `DATABASE_URL` pointe vers PostgreSQL
+  (fichiers `chmod 600`), rotation (`BACKUP_KEEP`, 7 par défaut) dans `BACKUP_DIR` (`data/backups` par défaut).
 ```bash
 python -m app.cli backup --keep 7
 python -m app.cli list-backups
@@ -453,14 +465,18 @@ python -m app.cli create-user <practice_id> secretariat@cabinet.fr "Accueil" sec
 Les sauvegardes doivent être copiées **hors du serveur** (stockage objet chiffré, autre région) : une sauvegarde
 sur le même disque ne protège pas d'une perte du disque.
 
-**PostgreSQL / `DATABASE_URL`** : non implémenté. Le code utilise `sqlite3` directement (SQL standard, quelques
-`INSERT OR IGNORE` / `ALTER TABLE` spécifiques). Migration recommandée avant plusieurs centaines de cabinets ou
-plusieurs instances : introduire SQLAlchemy Core (ou psycopg) derrière `db.get_conn()`, remplacer `INSERT OR IGNORE`
-par `ON CONFLICT DO NOTHING`, puis migrer les données (`pgloader`). Les sauvegardes passent alors par `pg_dump`.
+**PostgreSQL / `DATABASE_URL`** : si `DATABASE_URL` est définie (Render l'injecte automatiquement), l'application
+utilise PostgreSQL via `psycopg` ; en local, sans cette variable, elle reste sur SQLite (`DB_PATH`). Le schéma, les
+migrations et les requêtes sont portables (paramètres, identifiants, fonctions de dates, upserts). Le schéma est créé
+au démarrage ; les données de démo ne sont insérées que si la base est vide (`SEED_DEMO=1`). Les sauvegardes et
+exports fonctionnent avec les deux moteurs (`pg_dump` / copie SQLite à chaud).
 
-**Hébergement HDS** : en France, héberger des données de santé pour le compte de tiers impose un hébergeur
-**certifié HDS** (OVHcloud, Scaleway, Outscale, régions certifiées d'Azure/AWS/GCP…). Render, Railway et Fly.io ne le
-sont pas : à réserver à la démo. Dans les autres pays, vérifier la loi locale (ex. Sénégal : CDP).
+Sur Render, le **PostgreSQL gratuit expire au bout de 30 jours** ; le plan payant est d'environ **7 USD/mois**.
+Ce plan gratuit convient à une démo, pas à une production durable.
+
+**Hébergement HDS** : en France, avant toute donnée de santé réelle, l'hébergement doit être **certifié HDS**
+(OVHcloud, Scaleway, Outscale, régions certifiées d'Azure/AWS/GCP…). Render, Railway et Fly.io ne le sont pas :
+à réserver à la démo. Dans les autres pays, vérifier la loi locale (ex. Sénégal : CDP).
 
 ## Sécurité et RGPD
 
@@ -483,13 +499,14 @@ sont pas : à réserver à la démo. Dans les autres pays, vérifier la loi loca
 ## Déploiement
 
 **Render (un clic)** : le fichier `render.yaml` décrit un *Blueprint* : Render → *New* → *Blueprint* → choisir
-le dépôt GitHub. Service web Python gratuit, `healthCheckPath: /health`, `ADMIN_TOKEN` et `VOIP_WEBHOOK_TOKEN`
-générés automatiquement, clés fournisseurs à saisir dans le dashboard (`sync: false`).
-> **Persistance** : le plan gratuit n'a **pas de disque persistant** : la base SQLite est réinitialisée à chaque
-> redéploiement ou mise en veille prolongée (acceptable pour une démo, pas pour des patients). En production, passer
-> en plan payant et activer le bloc `disk` du `render.yaml` (`DB_PATH=/var/data/careassist.db`,
-> `BACKUP_DIR=/var/data/backups`), ou utiliser PostgreSQL. Le plan gratuit se met en veille : le planificateur de
-> rappels ne tourne pas pendant la veille (préférer un plan payant ou un cron externe).
+le dépôt GitHub. Service web Python gratuit à Francfort, base **PostgreSQL gratuite** (`careassist-db`, Francfort)
+branchée via `DATABASE_URL`, `healthCheckPath: /health`, `ADMIN_TOKEN` et `VOIP_WEBHOOK_TOKEN` générés automatiquement,
+clés fournisseurs à saisir dans le dashboard (`sync: false`).
+> **Persistance** : le web gratuit n'a **pas de disque persistant**. Avec `DATABASE_URL`, les données vivent dans
+> Postgres (le plan Postgres *free* **expire après 30 jours** ; le plan payant est d'environ 7 USD/mois). Sans
+> `DATABASE_URL`, la base SQLite est réinitialisée à chaque redéploiement (acceptable pour une démo locale).
+> Le service web gratuit se met en veille : le planificateur de rappels ne tourne pas pendant la veille
+> (préférer un plan payant, un cron externe, ou un hébergeur HDS). **Ne pas y héberger de vraies données patients.**
 
 **Procfile** (Heroku, Scalingo, Clever Cloud…) : `web: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers`.
 Scalingo et Clever Cloud proposent des offres certifiées HDS.
@@ -510,8 +527,15 @@ un seul processus avec `SCHEDULER_ENABLED=1` (ou cron), sauvegardes copiées hor
 
 ## Tarifs régionaux et paiements
 
-Un seul plan par région (appels illimités, cabinet solo ou petit groupe), facturé chaque mois dans la
-devise locale. La grille est dans `app/pricing.py` ; elle peut être remplacée sans toucher au code via
+Deux offres. Le **Gratuit** est à vie, avec des limites côté serveur : 30 conversations IA par mois, un seul
+utilisateur (le titulaire), rappels par e-mail uniquement, agenda et fiches patients, badge « Propulsé par CareAssist »,
+pas de numéro VoIP dédié ni de sauvegardes automatiques. Le **Premium** lève ces limites (appels et messages illimités,
+SMS et WhatsApp, plusieurs utilisateurs, VoIP, sauvegardes, support prioritaire) et est facturé chaque mois dans la
+devise locale — 299 €/mois HT en Europe (référence), tarifs régionaux en Afrique. Tout nouveau cabinet a **14 jours
+de Premium sans carte**, puis bascule sur le Gratuit s'il ne s'abonne pas (e-mail de rappel 3 jours avant la fin,
+puis le jour de l'échéance). Les cabinets de démonstration restent en Premium.
+
+La grille Premium est dans `app/pricing.py` ; elle peut être remplacée sans toucher au code via
 `PRICING_FILE=/chemin/pricing.json` (mêmes clés, ex. `{"uemoa": {"amount": 49000}}`).
 
 > **Prix indicatifs à valider.** Seul le tarif Europe (299 EUR/mois HT) est la référence. Les autres
@@ -595,7 +619,7 @@ Voici ce que je n'ai pas encore traité, ou seulement en partie :
 - Démo : cabinets, praticiens, patients et créneaux fictifs. SMS / WhatsApp / e-mails / appels en **mode démo**
   (enregistrés, non envoyés) : les intégrations Twilio, Vonage, Africa's Talking et SMTP suivent les formats d'API
   documentés mais n'ont pas été testées avec de vraies clés.
-- SQLite uniquement (pas de `DATABASE_URL` PostgreSQL) ; limitation de débit en mémoire (une seule instance).
+- Limitation de débit en mémoire (une seule instance). PostgreSQL est pris en charge via `DATABASE_URL` ; le Postgres gratuit Render expire à 30 jours.
 - Urgences : numéros vérifiés pour FR, SN, CI, CM seulement ; autres pays en TODO. Profils et modèles de messages
   en français (anglais partiel).
 - Pas de double authentification (2FA) ni de réinitialisation de mot de passe par e-mail ; pas de chiffrement
@@ -620,6 +644,6 @@ Je recherche un poste en systèmes, réseaux et cybersécurité, en Île-de-Fran
 
 LinkedIn : _à compléter_
 
-Contact du projet : contact@getcareassist.com · https://getcareassist.com
+Contact du projet : saurellenguefack543@gmail.com · 06 05 50 85 42 · https://getcareassist.com
 
 Crédits photos : voir `static/img/CREDITS.md` (Pexels, licence Pexels).

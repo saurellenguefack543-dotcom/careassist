@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CareAssist — Ne manquez plus jamais un rendez-vous. Votre réceptionniste IA 24/7 pour les professionnels de santé.</title>
-  <meta name="description" content="Réceptionniste IA 24/7 pour cabinets de santé : appels et messages décrochés, rendez-vous pris, rappels SMS/WhatsApp au patient et au médecin, urgences orientées vers les numéros du pays. Espace cabinet sécurisé. France et Afrique." />
+  <meta name="description" content="Réceptionniste IA 24/7 pour cabinets de santé : appels décrochés, rendez-vous pris, rappels au patient et au médecin. France et Afrique. Essai Premium 14 jours." />
   <meta name="theme-color" content="#0e7c86" />
   <link rel="canonical" href="https://getcareassist.com/" />
   <link rel="alternate" hreflang="fr" href="https://getcareassist.com/" />
@@ -14,268 +14,121 @@
   <meta property="og:image" content="https://getcareassist.com/img/hero-reception.jpg" />
   <meta property="og:locale" content="fr_FR" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta property="og:title" content="CareAssist — réceptionniste IA pour les professionnels de santé" />
-  <meta property="og:description" content="Ne manquez plus jamais un rendez-vous. Votre réceptionniste IA 24/7 pour les professionnels de santé." />
-  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="styles.css?v=6" />
+  <meta property="og:title" content="CareAssist — Ne manquez plus jamais un rendez-vous. Votre réceptionniste IA 24/7 pour les professionnels de santé." />
+  <meta property="og:description" content="Réceptionniste IA 24/7 pour cabinets de santé : appels décrochés, rendez-vous pris, rappels au patient et au médecin. France et Afrique. Essai Premium 14 jours." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css?v=8" />
 </head>
-<body>
+<body data-page="accueil">
 <a class="skip-link" href="#main">Aller au contenu</a>
 <header class="nav">
   <div class="container nav-inner">
-    <a href="#" class="logo"><span class="logo-mark"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span> CareAssist</a>
-    <nav class="nav-links">
-      <a href="#metiers" data-i18n="nav.pros">Métiers</a>
-      <a href="#demo" data-i18n="nav.demo">Démo</a>
-      <a href="#roi" data-i18n="nav.roi">ROI</a>
-      <a href="#tarif" data-i18n="nav.pricing">Tarif</a>
-      <a href="#espace" data-i18n="nav.space">Espace cabinet</a>
-      <a href="#faq">FAQ</a>
+    <a href="/" class="logo"><span class="logo-mark"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span> CareAssist</a>
+    <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Ouvrir le menu"><span></span><span></span><span></span></button>
+    <nav id="site-nav" class="nav-panel">
+      <div class="nav-links">
+        <a href="/" data-nav="accueil" data-i18n="nav.home">Accueil</a>
+        <a href="/fonctionnalites" data-nav="fonctionnalites" data-i18n="nav.features">Fonctionnalités</a>
+        <a href="/specialites" data-nav="specialites" data-i18n="nav.pros">Spécialités</a>
+        <a href="/cabinets" data-nav="cabinets" data-i18n="nav.directory">Cabinets</a>
+        <a href="/tarifs" data-nav="tarifs" data-i18n="nav.pricing">Tarifs</a>
+        <a href="/demo" data-nav="demo" data-i18n="nav.demo">Démo</a>
+        <a href="/faq" data-nav="faq">FAQ</a>
+        <a href="/contact" data-nav="contact" data-i18n="nav.contact">Contact</a>
+      </div>
+      <div class="nav-actions">
+        <button id="lang-toggle" class="btn-ghost" aria-label="Changer de langue">EN</button>
+        <a href="/espace" class="btn-ghost nav-login" data-i18n="nav.login">Connexion</a>
+        <a href="/contact" class="btn btn-primary btn-sm" data-i18n="nav.cta">Essai gratuit</a>
+      </div>
     </nav>
-    <div class="nav-actions">
-      <button id="lang-toggle" class="btn-ghost" aria-label="Changer de langue">EN</button>
-      <a href="/espace" class="btn-ghost nav-login" data-i18n="nav.login">Connexion</a>
-      <a href="#contact" class="btn btn-primary btn-sm" data-i18n="nav.cta">Essai gratuit</a>
-    </div>
   </div>
 </header>
-
 <main id="main">
-  <!-- HERO -->
+
   <section class="hero">
     <div class="container hero-grid">
       <div>
         <span class="pill" data-i18n="hero.pill">Dentistes · Psychologues · Ophtalmologues · Médecins · Kinés</span>
         <h1 data-i18n="hero.title">Ne manquez plus jamais un rendez-vous.</h1>
         <p class="hero-sub" data-i18n="hero.subtitle">Votre réceptionniste IA 24/7 pour les professionnels de santé.</p>
-        <p class="hero-text" data-i18n="hero.text">CareAssist décroche chaque appel, même pendant vos consultations, le soir et le week-end. Il prend, déplace et annule les rendez-vous dans votre agenda, répond aux questions des patients et oriente immédiatement les urgences vers les secours de votre pays.</p>
+        <p class="hero-text" data-i18n="hero.text">CareAssist décroche chaque appel, même pendant vos consultations, le soir et le week-end. Il prend, déplace et annule les rendez-vous, répond aux questions des patients et oriente les urgences vers les secours de votre pays.</p>
         <div class="hero-ctas">
-          <a href="#demo" class="btn btn-primary" data-i18n="hero.cta1">Essayer la démo</a>
-          <a href="#roi" class="btn btn-outline" data-i18n="hero.cta2">Calculer mon ROI</a>
+          <a href="/demo" class="btn btn-primary" data-i18n="hero.cta1">Essayer la démo</a>
+          <a href="/contact" class="btn btn-outline" data-i18n="home.trial">Essai Premium 14 jours</a>
         </div>
         <ul class="hero-proof">
           <li><strong>24/7</strong><span data-i18n="hero.p1">sans pause ni absence</span></li>
           <li><strong>&lt; 2 s</strong><span data-i18n="hero.p2">pour décrocher</span></li>
-          <li><strong id="hero-price">299 €</strong><span data-i18n="hero.p3">par mois, appels illimités</span></li>
+          <li><strong id="hero-price">299 €</strong><span data-i18n="hero.p3">Premium, par mois, appels illimités</span></li>
         </ul>
       </div>
-      <div class="hero-visual">
+      <div class="hero-visual hero-visual-simple">
         <picture class="hero-photo">
-          <source srcset="img/hero-reception.webp" type="image/webp" />
-          <img src="img/hero-reception.jpg" width="1600" height="1280" alt="Accueil d'un cabinet de santé" fetchpriority="high" />
+          <source srcset="/img/hero-reception.webp" type="image/webp" />
+          <img src="/img/hero-reception.jpg" width="1600" height="1280" alt="Médecin en blouse blanche en consultation avec un patient dans un cabinet de santé" fetchpriority="high" />
         </picture>
-        <div class="call-card">
-          <div class="call-head">
-            <span class="avatar"><svg class="i" data-icon="phone"></svg></span>
-            <div><strong>CareAssist</strong><small><span class="dot live"></span> <span data-i18n="hero.call">Appel entrant · 19:42</span></small></div>
-            <div class="wave"><i></i><i></i><i></i><i></i><i></i></div>
-          </div>
-          <div class="bubble user">J'aimerais voir le docteur demain, j'ai de la fièvre.</div>
-          <div class="bubble bot">Je peux vous recevoir demain à 11h20 avec le Dr Lefèvre. Cela vous convient ?</div>
-        </div>
-        <div class="cal-card">
-          <div class="cal-head"><svg class="i" data-icon="calendar"></svg><strong data-i18n="hero.cal">Agenda · demain</strong></div>
-          <div class="cal-row"><span>09:00</span><div class="ev busy">Contrôle</div></div>
-          <div class="cal-row"><span>10:40</span><div class="ev busy">Suivi</div></div>
-          <div class="cal-row"><span>11:20</span><div class="ev new"><svg class="i" data-icon="check"></svg> <span data-i18n="hero.booked">RDV confirmé</span></div></div>
-          <div class="cal-row"><span>14:00</span><div class="ev free"></div></div>
-        </div>
-        <div class="float-badge"><svg class="i" data-icon="shield"></svg><span data-i18n="hero.badge">Urgences triées par spécialité</span></div>
       </div>
     </div>
   </section>
-
-  <!-- MÉTIERS -->
-  <section id="metiers" class="section">
+  <section class="section alt">
+    <div class="container">
+      <h2 data-i18n="home.featTitle">L'essentiel, sans les appels manqués</h2>
+      <div class="features features-3">
+        <div class="feature"><div class="ficon"><svg class="i" data-icon="phone"></svg></div><h3 data-i18n="feat.f1t">Décroche 100 % des appels</h3><p data-i18n="feat.f1">Pendant les soins, le soir et le week-end. Fini la messagerie saturée.</p></div>
+        <div class="feature"><div class="ficon"><svg class="i" data-icon="calendar"></svg></div><h3 data-i18n="feat.f2t">Gère l'agenda</h3><p data-i18n="feat.f2">Prise, report et annulation en temps réel, uniquement sur vos créneaux réels.</p></div>
+        <div class="feature"><div class="ficon"><svg class="i" data-icon="alert"></svg></div><h3 data-i18n="feat.f3t">Trie les urgences</h3><p data-i18n="feat.f3">Détection par spécialité et orientation vers le numéro d'urgence de votre pays.</p></div>
+      </div>
+      <p class="center-link"><a href="/fonctionnalites" class="pro-link" data-i18n="home.moreFeat">Voir toutes les fonctionnalités</a></p>
+    </div>
+  </section>
+  <section class="section">
+    <div class="container split">
+      <picture>
+        <source srcset="/img/praticien.webp" type="image/webp" />
+        <img src="/img/praticien.jpg" width="1200" height="900" alt="Médecin souriant en blouse blanche, stéthoscope autour du cou, à son bureau" loading="lazy" />
+      </picture>
+      <div>
+        <h2 data-i18n="home.splitTitle">Conçu pour la France et l'Afrique</h2>
+        <p class="section-sub left" data-i18n="home.splitText">Un espace privé par cabinet, des rappels au patient et au praticien, une téléphonie cloud et un tarif adapté au pays : Europe, Sénégal, Côte d'Ivoire, Cameroun… Essai Premium de 14 jours, sans carte.</p>
+        <div class="hero-ctas">
+          <a href="/cabinets" class="btn btn-outline" data-i18n="home.dir">Annuaire des cabinets</a>
+          <a href="/tarifs" class="btn btn-primary" data-i18n="home.prices">Voir les tarifs</a>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="section alt">
     <div class="container">
       <h2 data-i18n="pros.title">Pensé pour chaque métier de la santé</h2>
-      <p class="section-sub" data-i18n="pros.sub">Chaque spécialité a ses motifs de rendez-vous, ses questions fréquentes, ses règles de remboursement et surtout ses propres signaux d'urgence. CareAssist les connaît.</p>
+      <p class="section-sub" data-i18n="pros.sub">Chaque spécialité a ses motifs de rendez-vous, ses questions fréquentes et ses propres signaux d'urgence.</p>
       <div class="pros-grid" id="pros-grid"></div>
     </div>
   </section>
-
-  <!-- BÉNÉFICES -->
-  <section class="section alt">
+  <section class="cta-band">
     <div class="container">
-      <h2 data-i18n="feat.title">Tout ce que fait un secrétariat, sans les appels manqués</h2>
-      <div class="features">
-        <div class="feature"><div class="ficon"><svg class="i" data-icon="phone"></svg></div><h3 data-i18n="feat.f1t">Décroche 100 % des appels</h3><p data-i18n="feat.f1">Pendant les soins, la pause déjeuner, le soir et le week-end. Fini la messagerie saturée.</p></div>
-        <div class="feature"><div class="ficon"><svg class="i" data-icon="calendar"></svg></div><h3 data-i18n="feat.f2t">Gère l'agenda</h3><p data-i18n="feat.f2">Prise, report et annulation en temps réel, uniquement sur vos créneaux réels. Compatible Google Agenda.</p></div>
-        <div class="feature"><div class="ficon"><svg class="i" data-icon="alert"></svg></div><h3 data-i18n="feat.f3t">Trie les urgences</h3><p data-i18n="feat.f3">Détection par spécialité : créneau prioritaire du jour, ou orientation immédiate vers le 15 / 3114.</p></div>
-        <div class="feature"><div class="ficon"><svg class="i" data-icon="message"></svg></div><h3 data-i18n="feat.f4t">Répond aux questions</h3><p data-i18n="feat.f4">Horaires, accès, carte Vitale, tiers payant, mutuelle, C2S, documents à apporter.</p></div>
-        <div class="feature"><div class="ficon"><svg class="i" data-icon="lock"></svg></div><h3 data-i18n="feat.f5t">Conçu pour le RGPD</h3><p data-i18n="feat.f5">Collecte minimale (nom, téléphone), aucune donnée bancaire ni n° de sécu, journal consultable.</p></div>
-        <div class="feature"><div class="ficon"><svg class="i" data-icon="users"></svg></div><h3 data-i18n="feat.f6t">Passe la main</h3><p data-i18n="feat.f6">Transfert vers votre secrétariat ou rappel programmé dès que la situation l'exige.</p></div>
+      <h2 data-i18n="home.ctaTitle">Testez CareAssist dans votre cabinet</h2>
+      <p data-i18n="home.ctaSub">14 jours de Premium, sans carte. Puis un plan Gratuit à vie, ou Premium selon votre pays.</p>
+      <div class="hero-ctas" style="justify-content:center">
+        <a href="/contact" class="btn btn-primary" data-i18n="lead.cta">Demander ma démo</a>
+        <a href="/demo" class="btn btn-outline light" data-i18n="hero.cta1">Essayer la démo</a>
       </div>
-    </div>
-  </section>
-
-  <!-- ESPACE CABINET, RAPPELS, VOIP, PAYS -->
-  <section id="espace" class="section">
-    <div class="container">
-      <h2 data-i18n="space.title">Votre cabinet, votre espace</h2>
-      <p class="section-sub" data-i18n="space.sub">Chaque cabinet dispose de son propre espace sécurisé : sa base patients, son agenda, ses appels et ses messages, isolés des autres cabinets.</p>
-      <div class="features">
-        <div class="feature"><div class="ficon"><svg class="i" data-icon="database"></svg></div><h3 data-i18n="space.f1t">Espace cabinet privé</h3><p data-i18n="space.f1">Base patients (recherche, préférences de contact, consentement), agenda semaine ou liste, statuts honoré / absent, comptes titulaire, praticien et secrétariat.</p></div>
-        <div class="feature"><div class="ficon"><svg class="i" data-icon="bell"></svg></div><h3 data-i18n="space.f2t">Rappels automatiques</h3><p data-i18n="space.f2">Patient et praticien prévenus à la réservation, la veille et 2 h avant (réglable), par SMS, WhatsApp ou e-mail. Le patient répond OUI ou ANNULER, le créneau se libère seul.</p></div>
-        <div class="feature"><div class="ficon"><svg class="i" data-icon="phone"></svg></div><h3 data-i18n="space.f3t">Téléphonie cloud</h3><p data-i18n="space.f3">Twilio, Vonage ou Africa's Talking : numéro dédié par cabinet, journal des appels avec transcription, messagerie vocale, transfert vers le secrétariat et SMS automatique après un appel manqué.</p></div>
-        <div class="feature"><div class="ficon"><svg class="i" data-icon="globe"></svg></div><h3 data-i18n="space.f4t">Adapté à chaque pays</h3><p data-i18n="space.f4">Fuseau horaire, format des numéros, devise, canaux préférés (WhatsApp en Afrique, SMS et e-mail en Europe) et numéros d'urgence du pays : 15 et 3114 en France, 1515 au Sénégal, 185 en Côte d'Ivoire, 119 au Cameroun.</p></div>
-        <div class="feature"><div class="ficon"><svg class="i" data-icon="download"></svg></div><h3 data-i18n="space.f5t">Vos données, exportables</h3><p data-i18n="space.f5">Export JSON ou CSV en un clic, sauvegarde automatique quotidienne, export et effacement par patient (RGPD), journal d'audit.</p></div>
-        <div class="feature"><div class="ficon"><svg class="i" data-icon="shield"></svg></div><h3 data-i18n="space.f6t">Sécurité par défaut</h3><p data-i18n="space.f6">Mots de passe chiffrés (bcrypt), sessions sécurisées, protection CSRF, limitation des tentatives, isolation stricte entre cabinets. Hébergement HDS recommandé en production.</p></div>
-      </div>
-      <div class="hero-ctas" style="justify-content:center;margin-top:28px">
-        <a href="/espace" class="btn btn-primary" data-i18n="space.cta">Ouvrir l'espace de démo</a>
-        <a href="#contact" class="btn btn-outline" data-i18n="space.cta2">Parler à l'équipe</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- COMMENT ÇA MARCHE -->
-  <section class="section">
-    <div class="container">
-      <h2 data-i18n="how.title">Opérationnel en 48 heures</h2>
-      <div class="steps">
-        <div class="step"><span>1</span><h3 data-i18n="how.s1t">On configure votre cabinet</h3><p data-i18n="how.s1">Spécialité, horaires, praticiens, types de rendez-vous, règles d'urgence.</p></div>
-        <div class="step"><span>2</span><h3 data-i18n="how.s2t">Vous renvoyez vos appels</h3><p data-i18n="how.s2">Renvoi depuis votre ligne actuelle (sur non-réponse ou en permanence). Aucun changement de numéro.</p></div>
-        <div class="step"><span>3</span><h3 data-i18n="how.s3t">Vous recevez les rendez-vous</h3><p data-i18n="how.s3">Directement dans votre agenda, avec un tableau de bord des appels et des urgences.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- DÉMO -->
-  <section id="demo" class="section alt">
-    <div class="container">
-      <h2 data-i18n="demo.title">Parlez à CareAssist</h2>
-      <p class="section-sub" data-i18n="demo.sub">Choisissez une spécialité et testez une vraie conversation : prise de rendez-vous, question de remboursement ou urgence. (Démo en français.)</p>
-      <div class="demo-wrap">
-        <div class="spec-tabs" id="spec-tabs" role="tablist"></div>
-        <div class="chat">
-          <div class="chat-head">
-            <div><strong id="chat-practice">Cabinet</strong><small id="chat-status" class="status">…</small></div>
-            <button class="btn-ghost small" id="chat-reset" data-i18n="demo.reset">Nouvelle conversation</button>
-          </div>
-          <div class="chat-body" id="chat-body" aria-live="polite"></div>
-          <div class="chips" id="chips"></div>
-          <form class="chat-input" id="chat-form">
-            <input id="chat-text" autocomplete="off" aria-label="Votre message" maxlength="1000" placeholder="Écrivez votre message…" data-i18n-ph="demo.ph" />
-            <button class="btn btn-primary" type="submit" data-i18n="demo.send">Envoyer</button>
-          </form>
-        </div>
-        <p class="note" data-i18n="demo.note">Démo : les créneaux et cabinets sont fictifs. En cas d'urgence réelle, appelez le 15 ou le 112.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ROI -->
-  <section id="roi" class="section">
-    <div class="container">
-      <h2 data-i18n="roi.title">Combien vous coûtent vos appels manqués ?</h2>
-      <p class="section-sub" data-i18n="roi.sub">Ajustez les hypothèses ou partez d'un préréglage par spécialité.</p>
-      <div class="roi">
-        <div class="roi-inputs">
-          <label><span data-i18n="roi.preset">Spécialité (préréglage)</span>
-            <select id="roi-preset"></select></label>
-          <label><span data-i18n="roi.missed">Appels manqués par jour</span> <output id="o-missed"></output>
-            <input type="range" id="r-missed" min="1" max="60" step="1" /></label>
-          <label><span data-i18n="roi.new">Part de nouveaux patients parmi ces appels</span> <output id="o-new"></output>
-            <input type="range" id="r-new" min="5" max="100" step="5" /></label>
-          <label><span data-i18n="roi.conv">Taux de conversion en rendez-vous</span> <output id="o-conv"></output>
-            <input type="range" id="r-conv" min="10" max="100" step="5" /></label>
-          <label><span data-i18n="roi.value">Valeur moyenne d'un nouveau patient (€)</span> <output id="o-value"></output>
-            <input type="range" id="r-value" min="30" max="3000" step="10" /></label>
-          <label><span data-i18n="roi.days">Jours ouvrés par mois</span> <output id="o-days"></output>
-            <input type="range" id="r-days" min="10" max="26" step="1" value="21" /></label>
-        </div>
-        <div class="roi-results">
-          <div class="kpi"><span data-i18n="roi.k1">Nouveaux patients récupérés / mois</span><strong id="k-patients">0</strong></div>
-          <div class="kpi big"><span data-i18n="roi.k2">Chiffre d'affaires récupéré / mois</span><strong id="k-revenue">0 €</strong></div>
-          <div class="kpi"><span data-i18n="roi.k3">Retour sur investissement (vs abonnement)</span><strong id="k-roi">×0</strong></div>
-          <div class="kpi"><span data-i18n="roi.k4">Abonnement rentabilisé en</span><strong id="k-payback">–</strong></div>
-          <p class="note" data-i18n="roi.note">Estimation indicative fondée sur vos hypothèses ; les préréglages sont des ordres de grandeur, pas des statistiques.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- TARIF -->
-  <section id="tarif" class="section alt">
-    <div class="container">
-      <h2 data-i18n="price.title">Un seul tarif, tout compris</h2>
-      <p class="section-sub" data-i18n="price.sub">Un tarif adapté à votre pays, payable dans votre devise : carte, prélèvement SEPA ou mobile money selon la région.</p>
-      <div class="region-picker">
-        <label for="region-select"><svg class="i" data-icon="globe"></svg> <span data-i18n="price.region">Pays / région</span></label>
-        <select id="region-select"></select>
-        <small id="region-guess" class="small"></small>
-      </div>
-      <div class="price-card">
-        <div class="price-name">CareAssist</div>
-        <div class="price"><span id="price-amount">299 €</span><small id="price-per" data-i18n="price.per">/mois HT</small></div>
-        <p id="price-approx" class="small"></p>
-        <p data-i18n="price.desc">Appels illimités pour un cabinet solo ou un petit groupe.</p>
-        <ul>
-          <li data-i18n="price.l1">Réceptionniste IA 24/7, voix naturelle en français</li>
-          <li data-i18n="price.l2">Prise, report et annulation de rendez-vous</li>
-          <li data-i18n="price.l3">Protocoles d'urgence propres à votre spécialité</li>
-          <li data-i18n="price.l4">FAQ personnalisée (horaires, accès, remboursements)</li>
-          <li data-i18n="price.l5">Synchronisation agenda et tableau de bord</li>
-          <li data-i18n="price.l6">Transfert vers votre secrétariat</li>
-          <li data-i18n="price.l7">Sans engagement, mise en service accompagnée</li>
-        </ul>
-        <div class="methods" id="price-methods"></div>
-        <p id="price-note" class="small"></p>
-        <button type="button" id="subscribe-open" class="btn btn-primary btn-block" data-i18n="price.subscribe">S'abonner</button>
-        <form id="checkout-form" class="checkout-form" hidden novalidate>
-          <input name="practice_name" required minlength="2" placeholder="Nom du cabinet" data-i18n-ph="price.f_name" />
-          <input name="email" type="email" required placeholder="contact@getcareassist.com" />
-          <input name="phone" type="tel" placeholder="Téléphone (facultatif)" data-i18n-ph="price.f_phone" />
-          <button class="btn btn-primary btn-block" type="submit" data-i18n="price.pay">Continuer vers le paiement</button>
-          <p id="checkout-msg" class="form-msg" role="status"></p>
-        </form>
-        <a href="#contact" class="btn btn-outline btn-block" style="margin-top:10px" data-i18n="price.cta">Demander une démo d'abord</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- FAQ -->
-  <section id="faq" class="section">
-    <div class="container narrow">
-      <h2 data-i18n="faq.title">Questions fréquentes</h2>
-      <details><summary data-i18n="faq.q1">Est-ce que je garde mon numéro ?</summary><p data-i18n="faq.a1">Oui. Vous activez simplement un renvoi d'appel (sur non-réponse, occupation ou permanent) vers votre ligne CareAssist.</p></details>
-      <details><summary data-i18n="faq.q2">Que se passe-t-il en cas d'urgence ?</summary><p data-i18n="faq.a2">La détection d'urgence est déterministe et propre à chaque spécialité. Les signes vitaux déclenchent une orientation immédiate vers le numéro d'urgence du pays (15 / 112 et 3114 en France, 1515 au Sénégal, 119 au Cameroun…) ; les urgences non vitales obtiennent un créneau prioritaire du jour et vous sont signalées.</p></details>
-      <details><summary data-i18n="faq.q3">CareAssist donne-t-il des conseils médicaux ?</summary><p data-i18n="faq.a3">Non. Il ne pose aucun diagnostic et ne remplace pas un professionnel : il organise, informe et oriente. Pour les psychologues, il ne fait jamais de thérapie.</p></details>
-      <details><summary data-i18n="faq.q4">Et les données de santé ?</summary><p data-i18n="faq.a4">La collecte est minimale (nom, téléphone, motif court). En production, l'hébergement doit être certifié HDS ; nous vous accompagnons sur le registre RGPD et l'information patient.</p></details>
-      <details><summary data-i18n="faq.q5">Avec quel agenda fonctionne-t-il ?</summary><p data-i18n="faq.a5">Google Agenda en natif ; les logiciels métiers et plateformes de prise de rendez-vous se branchent via leur API quand elle est disponible.</p></details>
-      <details><summary data-i18n="faq.q6">Les patients savent-ils qu'ils parlent à une IA ?</summary><p data-i18n="faq.a6">Oui, CareAssist se présente comme l'assistante virtuelle du cabinet et propose toujours de passer la main à un humain.</p></details>
-    </div>
-  </section>
-
-  <!-- CONTACT -->
-  <section id="contact" class="section alt">
-    <div class="container narrow">
-      <h2 data-i18n="lead.title">Testez CareAssist dans votre cabinet</h2>
-      <p class="section-sub" data-i18n="lead.sub">Laissez vos coordonnées : nous configurons une démo à votre nom sous 24 h ouvrées.</p>
-      <form id="lead-form" class="lead-form" novalidate>
-        <label><span data-i18n="lead.name">Nom du cabinet</span><input name="practice_name" required minlength="2" placeholder="Cabinet du Dr Martin" /></label>
-        <label><span data-i18n="lead.spec">Spécialité</span><select name="specialty" id="lead-spec"></select></label>
-        <label><span>Email</span><input name="email" type="email" required placeholder="contact@getcareassist.com" /></label>
-        <label><span data-i18n="lead.phone">Téléphone</span><input name="phone" type="tel" required placeholder="01 23 45 67 89" /></label>
-        <label class="full"><span data-i18n="lead.msg">Message (facultatif)</span><textarea name="message" rows="3"></textarea></label>
-        <label class="full consent"><input type="checkbox" name="consent" required /> <span data-i18n="lead.consent">J'accepte d'être recontacté au sujet de CareAssist. Mes données ne sont jamais revendues.</span></label>
-        <button class="btn btn-primary full" type="submit" data-i18n="lead.cta">Demander ma démo</button>
-        <p id="lead-msg" class="form-msg full" role="status"></p>
-      </form>
     </div>
   </section>
 </main>
-
 <footer class="footer">
   <div class="container footer-inner">
     <div><span class="logo"><span class="logo-mark"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span> CareAssist</span>
       <p data-i18n="footer.slogan">Ne manquez plus jamais un rendez-vous. Votre réceptionniste IA 24/7 pour les professionnels de santé.</p></div>
     <p class="small" data-i18n="footer.legal">CareAssist n'est pas un dispositif médical et ne remplace pas les services d'urgence. En France : urgence 15 / 112, prévention du suicide 3114. Ailleurs : numéros d'urgence de votre pays.</p>
-    <div class="small"><a href="mailto:contact@getcareassist.com">contact@getcareassist.com</a> · getcareassist.com<br /><a href="/espace">Espace cabinet</a> · <a href="img/CREDITS.md">Crédits photos (Pexels)</a></div>
+    <div class="small">
+      <a href="mailto:saurellenguefack543@gmail.com">saurellenguefack543@gmail.com</a><br />
+      <a href="tel:+33605508542">06 05 50 85 42</a> · getcareassist.com<br />
+      <a href="/espace">Espace cabinet</a> · <a href="/cabinets">Annuaire</a> · <a href="/img/CREDITS.md">Crédits photos (Pexels)</a>
+    </div>
   </div>
 </footer>
-<script src="icons.js?v=4"></script>
-<script src="app.js?v=5"></script>
+<script src="/icons.js?v=4"></script>
+<script src="/app.js?v=8"></script>
 </body>
 </html>

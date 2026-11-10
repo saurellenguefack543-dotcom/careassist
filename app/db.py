@@ -1,6 +1,7 @@
 """Accès SQLite (stdlib) : schéma, connexions, helpers."""
 import json
 import os
+import re
 import sqlite3
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -218,6 +219,16 @@ CREATE TABLE IF NOT EXISTS emergencies (
     message TEXT NOT NULL,
     created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS practice_faq (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    practice_id INTEGER NOT NULL REFERENCES practices(id),
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    keywords TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_faq_practice ON practice_faq(practice_id);
 """
 
 
@@ -234,13 +245,221 @@ def now_iso() -> str:
     return datetime.now(ZoneInfo(config.timezone())).replace(microsecond=0).isoformat()
 
 
-def get_conn() -> sqlite3.Connection:
+def database_url() -> str:
+    """URL PostgreSQL (Render : DATABASE_URL). Vide = SQLite local."""
+    url = config.env("DATABASE_URL")
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://"):]
+    return url
+
+
+def is_postgres() -> bool:
+    return bool(database_url())
+
+
+def _qmark_to_percent(sql: str) -> str:
+    """Remplace les placeholders ? hors chaîtes par %s (psycopg)."""
+    out, i, n, in_s, quote = [], 0, len(sql), False, ""
+    while i < n:
+        c = sql[i]
+        if in_s:
+            out.append(c)
+            if c == quote:
+                in_s = False
+            elif c == "\\" and i + 1 < n:
+                out.append(sql[i + 1]); i += 1
+            i += 1
+            continue
+        if c in ("'", '"'):
+            in_s, quote = True, c
+            out.append(c)
+        elif c == "?":
+            out.append("%s")
+        else:
+            out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def _adapt_sql(sql: str) -> str:
+    rewritten = re.sub(r"(?i)INSERT\s+OR\s+IGNORE\s+INTO", "INSERT INTO", sql)
+    ignored = rewritten != sql
+    sql = rewritten
+    if ignored:
+        sql = sql.rstrip().rstrip(";") + " ON CONFLICT DO NOTHING"
+    m = re.match(r"\s*INSERT\s+INTO\s+([A-Za-z_][A-Za-z0-9_]*)", sql, re.I)
+    if m and m.group(1).lower() != "sessions" and "RETURNING" not in sql.upper():
+        sql = sql.rstrip().rstrip(";") + " RETURNING id"
+    return _qmark_to_percent(sql)
+
+
+class _PgRow:
+    def __init__(self, cols, values):
+        self._cols = cols
+        self._values = list(values)
+        self._map = {c: v for c, v in zip(cols, values)}
+
+    def __getitem__(self, key):
+        return self._values[key] if isinstance(key, int) else self._map[key]
+
+    def __iter__(self):
+        return iter(self._values)
+
+    def keys(self):
+        return self._map.keys()
+
+    def __contains__(self, key):
+        return key in self._map
+
+
+class _PgCursor:
+    def __init__(self, cur):
+        self._cur = cur
+        self.lastrowid = None
+        self.description = None
+        self.rowcount = -1
+
+    def execute(self, sql, params=None):
+        adapted = _adapt_sql(sql)
+        self._cur.execute(adapted, tuple(params) if params is not None else None)
+        self.description = self._cur.description
+        self.rowcount = self._cur.rowcount
+        self.lastrowid = None
+        if self._cur.description and len(self._cur.description) == 1 and self._cur.description[0].name == "id":
+            # INSERT ... RETURNING id : consomme la ligne pour lastrowid
+            if re.match(r"\s*INSERT\s", sql, re.I):
+                row = self._cur.fetchone()
+                if row:
+                    self.lastrowid = row[0]
+        return self
+
+    def executemany(self, sql, seq):
+        adapted = _adapt_sql(sql)
+        # pas de lastrowid utile ici
+        self._cur.executemany(adapted, list(seq))
+        self.description = self._cur.description
+        self.rowcount = self._cur.rowcount
+        return self
+
+    def fetchone(self):
+        row = self._cur.fetchone()
+        if row is None:
+            return None
+        cols = [d.name for d in self._cur.description]
+        if hasattr(row, "keys"):
+            return _PgRow(cols, [row[c] for c in cols])
+        return _PgRow(cols, row)
+
+    def fetchall(self):
+        rows = self._cur.fetchall()
+        if not rows:
+            return []
+        cols = [d.name for d in self._cur.description]
+        out = []
+        for row in rows:
+            if hasattr(row, "keys"):
+                out.append(_PgRow(cols, [row[c] for c in cols]))
+            else:
+                out.append(_PgRow(cols, row))
+        return out
+
+    def __iter__(self):
+        while True:
+            row = self.fetchone()
+            if row is None:
+                return
+            yield row
+
+    def close(self):
+        self._cur.close()
+
+
+class _PgConn:
+    def __init__(self, raw):
+        self._raw = raw
+
+    def execute(self, sql, params=None):
+        cur = _PgCursor(self._raw.cursor())
+        return cur.execute(sql, params)
+
+    def executemany(self, sql, seq):
+        cur = _PgCursor(self._raw.cursor())
+        return cur.executemany(sql, seq)
+
+    def executescript(self, script: str):
+        # découpe naïve : le schéma n'a pas de point-virgule dans des chaînes utiles
+        for stmt in script.split(";"):
+            stmt = stmt.strip()
+            if stmt:
+                self.execute(stmt)
+
+    def commit(self):
+        self._raw.commit()
+
+    def rollback(self):
+        self._raw.rollback()
+
+    def close(self):
+        self._raw.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        try:
+            if exc_type:
+                self._raw.rollback()
+            else:
+                self._raw.commit()
+        finally:
+            self._raw.close()
+        return False
+
+
+def _sqlite_conn():
     path = config.db_path()
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     conn = sqlite3.connect(path, timeout=10)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
+
+
+def _pg_conn():
+    import psycopg
+    raw = psycopg.connect(database_url(), autocommit=False)
+    return _PgConn(raw)
+
+
+def get_conn():
+    return _pg_conn() if is_postgres() else _sqlite_conn()
+
+
+def schema_sql() -> str:
+    sql = SCHEMA
+    if is_postgres():
+        sql = sql.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY")
+    return sql
+
+
+def table_columns(conn, table: str) -> set[str]:
+    if is_postgres():
+        rows_ = conn.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name=?",
+            (table,),
+        ).fetchall()
+        return {r[0] for r in rows_}
+    return {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+
+
+def is_empty() -> bool:
+    """Vrai si aucun cabinet n'est encore enregistré (première initialisation)."""
+    with get_conn() as conn:
+        try:
+            n = conn.execute("SELECT COUNT(*) FROM practices").fetchone()[0]
+        except Exception:
+            return True
+    return n == 0
 
 
 # Colonnes ajoutées après coup (migration légère, idempotente, pour les bases existantes)
@@ -262,21 +481,52 @@ MIGRATIONS = {
         "quiet_start": "TEXT NOT NULL DEFAULT '21:00'", "quiet_end": "TEXT NOT NULL DEFAULT '08:00'",
         "missed_call_sms": "INTEGER NOT NULL DEFAULT 1",
         "created_at": "TEXT", "is_demo": "INTEGER NOT NULL DEFAULT 0",
+        "plan": "TEXT NOT NULL DEFAULT 'free'",
+        "trial_ends_at": "TEXT",
+        "subscription_status": "TEXT NOT NULL DEFAULT 'free'",
+        "trial_notice_3d": "INTEGER NOT NULL DEFAULT 0",
+        "trial_notice_end": "INTEGER NOT NULL DEFAULT 0",
+        "logo_path": "TEXT",
+        "emergency_contact_name": "TEXT",
+        "emergency_contact_phone": "TEXT",
+        "city": "TEXT",
+        "listing_status": "TEXT NOT NULL DEFAULT 'pending'",
+        "directory_visible": "INTEGER NOT NULL DEFAULT 1",
+        "published_at": "TEXT",
     },
     "practitioners": {"phone_e164": "TEXT", "email": "TEXT", "notify_channel": "TEXT", "active": "INTEGER NOT NULL DEFAULT 1"},
     "appointments": {"patient_id": "INTEGER", "notes": "TEXT", "patient_confirmed_at": "TEXT", "updated_at": "TEXT",
                      "source": "TEXT DEFAULT 'assistant'"},
+    "subscriptions": {"practice_id": "INTEGER"},
 }
 
 
 def init_db() -> None:
     with get_conn() as conn:
-        conn.executescript(SCHEMA)
+        conn.executescript(schema_sql())
+        added_plan = False
         for table, cols in MIGRATIONS.items():
-            existing = {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+            existing = table_columns(conn, table)
             for col, ddl in cols.items():
                 if col not in existing:
                     conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}")
+                    if table == "practices" and col == "plan":
+                        added_plan = True
+        if added_plan:
+            from .plans import backfill_existing
+            backfill_existing(conn)
+            # démo : fiches déjà publiées ; les autres restent en attente
+            conn.execute(
+                "UPDATE practices SET listing_status='published', published_at=COALESCE(published_at, created_at, ?) "
+                "WHERE is_demo=1",
+                (now_iso(),),
+            )
+        from .directory import infer_city
+        for row in conn.execute("SELECT id, address, city FROM practices").fetchall():
+            if not (row["city"] or "").strip():
+                city = infer_city(row["address"])
+                if city:
+                    conn.execute("UPDATE practices SET city=? WHERE id=?", (city, row["id"]))
         conn.execute("CREATE INDEX IF NOT EXISTS idx_appt_practice ON appointments(practice_id)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_practices_voip ON practices(voip_number)")
 
@@ -311,6 +561,12 @@ def get_practice(key) -> dict | None:
 def list_practices() -> list[dict]:
     with get_conn() as conn:
         return rows(conn.execute("SELECT * FROM practices ORDER BY id"))
+
+
+def get_conversation(session_id: str) -> dict | None:
+    with get_conn() as conn:
+        r = conn.execute("SELECT * FROM conversations WHERE session_id=?", (session_id,)).fetchone()
+        return dict(r) if r else None
 
 
 def get_or_create_conversation(session_id: str, channel: str = "web", practice_id: int | None = None) -> dict:

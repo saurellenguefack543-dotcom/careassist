@@ -14,13 +14,14 @@ import unicodedata
 import zipfile
 from datetime import date, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from . import auth, booking, db, messaging, notifications, security
+from . import auth, booking, config, db, messaging, notifications, security
 from . import phone as phonelib
 from .countries import COUNTRIES, get_country, public_countries
+from . import plans, directory
 from .specialties import SPECIALTIES
 
 router = APIRouter()
@@ -104,15 +105,23 @@ def signup(body: SignupIn, request: Request, response: Response):
     with db.get_conn() as conn:
         if conn.execute("SELECT 1 FROM users WHERE email=?", (body.email.lower(),)).fetchone():
             raise HTTPException(409, "Un compte existe déjà avec cet e-mail")
+        city = directory.infer_city(body.address)
         pid = create_practice(conn, name=body.practice_name.strip(), specialty=body.specialty, country=body.country,
                               address=body.address, phone=body.phone, email=body.email.lower())
+        if city:
+            conn.execute("UPDATE practices SET city=? WHERE id=?", (city, pid))
         prac = conn.execute("INSERT INTO practitioners(practice_id, name, specialty, email) VALUES (?,?,?,?)",
                             (pid, body.name.strip(), SPECIALTIES[body.specialty]["label"], body.email.lower())).lastrowid
         uid = auth.create_user(pid, body.email, body.password, body.name, "owner", prac, conn=conn)
+    plans.start_trial(pid)
     booking.generate_slots(pid)
     csrf = auth.create_session(uid, request, response)
     security.audit(pid, uid, "signup", "practice", pid, request)
-    return {"ok": True, "practice_id": pid, "csrf": csrf}
+    try:
+        directory.notify_admin_new_listing(db.get_practice(pid))
+    except Exception:
+        pass
+    return {"ok": True, "practice_id": pid, "csrf": csrf, "trial_days": plans.TRIAL_DAYS}
 
 
 @router.post("/api/auth/login", dependencies=[Depends(security.limiter("login"))])
@@ -157,8 +166,13 @@ def change_password(body: PasswordIn, request: Request, response: Response, user
 @router.get("/api/auth/me")
 def me(user: dict = Depends(ANY)):
     p = _practice(user)
-    return {"user": user, "practice": {k: p[k] for k in ("id", "name", "specialty", "country", "timezone", "currency", "language")},
-            "country": get_country(p["country"])}
+    out = {"user": user,
+           "practice": {k: p[k] for k in ("id", "name", "specialty", "country", "timezone", "currency", "language", "slug")},
+           "country": get_country(p["country"]),
+           "plan": plans.plan_payload(p),
+           "listing": directory.listing_payload(p),
+           "logo": bool(p.get("logo_path"))}
+    return out
 
 
 @router.get("/api/countries")
@@ -584,6 +598,9 @@ def users(user: dict = Depends(OWNER)):
 def add_user(body: UserIn, request: Request, user: dict = Depends(OWNER)):
     if body.role not in auth.ROLES:
         raise HTTPException(422, "Rôle invalide")
+    ok, msg = plans.can_add_user(_practice(user))
+    if not ok:
+        raise HTTPException(403, msg)
     with db.get_conn() as conn:
         if conn.execute("SELECT 1 FROM users WHERE email=?", (body.email.lower(),)).fetchone():
             raise HTTPException(409, "E-mail déjà utilisé")
@@ -620,12 +637,17 @@ class SettingsIn(BaseModel):
     transfer_number: str | None = None
     insurance_note: str | None = Field(None, max_length=1000)
     prices_note: str | None = Field(None, max_length=1000)
+    city: str | None = Field(None, max_length=120)
+    emergency_contact_name: str | None = Field(None, max_length=160)
+    emergency_contact_phone: str | None = Field(None, max_length=30)
+    directory_visible: bool | None = None
 
 
 SETTINGS_FIELDS = ("id", "name", "specialty", "address", "phone", "email", "hours", "access", "country", "timezone", "currency",
                    "language", "notify_on_booking", "notify_practitioner", "notify_patient_offsets", "notify_practitioner_offsets",
                    "patient_channels", "practitioner_channel", "quiet_start", "quiet_end", "missed_call_sms", "voip_provider",
-                   "voip_number", "transfer_number", "insurance_note", "prices_note")
+                   "voip_number", "transfer_number", "insurance_note", "prices_note", "city", "emergency_contact_name",
+                   "emergency_contact_phone", "directory_visible", "listing_status", "published_at", "created_at", "logo_path")
 
 
 @router.get("/api/espace/settings")
@@ -638,6 +660,12 @@ def get_settings(user: dict = Depends(ANY)):
     out["voip_status"] = messaging.status_overview()
     out["specialties"] = {k: v["label"] for k, v in SPECIALTIES.items()}
     out["countries"] = {k: v["name"] for k, v in COUNTRIES.items()}
+    out["has_logo"] = bool(p.get("logo_path"))
+    out["listing"] = directory.listing_payload(p)
+    out["plan"] = plans.plan_payload(p)
+    out["directory_visible"] = bool(p.get("directory_visible", 1))
+    if not out.get("city"):
+        out["city"] = directory.infer_city(p.get("address"))
     return out
 
 
@@ -680,7 +708,10 @@ def put_settings(body: SettingsIn, request: Request, user: dict = Depends(OWNER)
         raise HTTPException(422, "Canal praticien invalide")
     if "voip_provider" in v and v["voip_provider"] not in ("auto", "twilio", "vonage", "africastalking"):
         raise HTTPException(422, "Fournisseur VoIP invalide")
-    for k in ("voip_number", "transfer_number", "phone"):
+    if (v.get("voip_number") or (v.get("voip_provider") and v.get("voip_provider") != "auto" and v.get("voip_provider") != p.get("voip_provider"))) and not plans.can_use_voip(p):
+        if v.get("voip_number"):
+            raise HTTPException(403, "Le numéro VoIP dédié est réservé au plan Premium.")
+    for k in ("voip_number", "transfer_number", "phone", "emergency_contact_phone"):
         if v.get(k):
             try:
                 e = phonelib.to_e164(v[k], country)
@@ -694,9 +725,11 @@ def put_settings(body: SettingsIn, request: Request, user: dict = Depends(OWNER)
         with db.get_conn() as conn:
             if conn.execute("SELECT 1 FROM practices WHERE voip_number=? AND id!=?", (v["voip_number"], p["id"])).fetchone():
                 raise HTTPException(409, "Ce numéro VoIP est déjà attribué à un autre cabinet")
-    for k in ("notify_on_booking", "notify_practitioner", "missed_call_sms"):
+    for k in ("notify_on_booking", "notify_practitioner", "missed_call_sms", "directory_visible"):
         if k in v:
             v[k] = int(v[k])
+    if "city" in v and v["city"] is not None:
+        v["city"] = v["city"].strip()
     if v:
         with db.get_conn() as conn:
             conn.execute("UPDATE practices SET " + ", ".join(f"{k}=?" for k in v) + " WHERE id=?", (*v.values(), p["id"]))
@@ -765,3 +798,110 @@ def run_notifications(user: dict = Depends(STAFF_ADMIN)):
     """Déclenche l'envoi des notifications échues (toutes les notifications sont de toute façon traitées par le
     planificateur) — utile en démo."""
     return notifications.dispatch_due(practice_id=user["practice_id"])
+
+
+# ================================================================ logo & FAQ
+
+LOGO_DIR = config.BASE_DIR / "data" / "logos"
+LOGO_MAX_BYTES = 1_000_000
+
+
+def _logo_file(pid: int) -> Path:
+    return LOGO_DIR / f"{pid}.webp"
+
+
+@router.get("/api/espace/logo")
+def get_logo(user: dict = Depends(ANY)):
+    path = _logo_file(user["practice_id"])
+    if not path.is_file():
+        raise HTTPException(404, "Aucun logo")
+    return FileResponse(path, media_type="image/webp")
+
+
+@router.post("/api/espace/logo")
+async def upload_logo(request: Request, user: dict = Depends(OWNER), file: UploadFile = File(...)):
+    data = await file.read()
+    if len(data) > LOGO_MAX_BYTES:
+        raise HTTPException(422, "Logo trop volumineux (1 Mo maximum)")
+    try:
+        from PIL import Image
+        im = Image.open(io.BytesIO(data))
+        im = im.convert("RGB")
+        im.thumbnail((800, 800))
+    except Exception:
+        raise HTTPException(422, "Fichier image invalide (JPEG, PNG ou WebP)")
+    LOGO_DIR.mkdir(parents=True, exist_ok=True)
+    dest = _logo_file(user["practice_id"])
+    im.save(dest, "WEBP", quality=82, method=6)
+    rel = str(dest)
+    with db.get_conn() as conn:
+        conn.execute("UPDATE practices SET logo_path=? WHERE id=?", (rel, user["practice_id"]))
+    security.audit(user["practice_id"], user["id"], "logo.update", request=request)
+    return {"ok": True, "has_logo": True}
+
+
+@router.delete("/api/espace/logo")
+def delete_logo(request: Request, user: dict = Depends(OWNER)):
+    path = _logo_file(user["practice_id"])
+    if path.exists():
+        path.unlink()
+    with db.get_conn() as conn:
+        conn.execute("UPDATE practices SET logo_path=NULL WHERE id=?", (user["practice_id"],))
+    security.audit(user["practice_id"], user["id"], "logo.delete", request=request)
+    return {"ok": True}
+
+
+class FaqIn(BaseModel):
+    question: str = Field(..., min_length=3, max_length=300)
+    answer: str = Field(..., min_length=3, max_length=2000)
+    keywords: str | None = Field(None, max_length=300)
+    sort_order: int = 0
+
+
+def _faq_row(conn, faq_id: int, pid: int):
+    r = conn.execute("SELECT * FROM practice_faq WHERE id=? AND practice_id=?", (faq_id, pid)).fetchone()
+    if not r:
+        raise HTTPException(404, "Question introuvable")
+    return dict(r)
+
+
+@router.get("/api/espace/faq")
+def list_faq(user: dict = Depends(ANY)):
+    with db.get_conn() as conn:
+        return db.rows(conn.execute(
+            "SELECT id, question, answer, keywords, sort_order FROM practice_faq WHERE practice_id=? ORDER BY sort_order, id",
+            (user["practice_id"],)))
+
+
+@router.post("/api/espace/faq", status_code=201)
+def add_faq(body: FaqIn, request: Request, user: dict = Depends(OWNER)):
+    with db.get_conn() as conn:
+        fid = conn.execute(
+            "INSERT INTO practice_faq(practice_id, question, answer, keywords, sort_order) VALUES (?,?,?,?,?)",
+            (user["practice_id"], body.question.strip(), body.answer.strip(), (body.keywords or "").strip(), body.sort_order),
+        ).lastrowid
+        row = _faq_row(conn, fid, user["practice_id"])
+    security.audit(user["practice_id"], user["id"], "faq.create", "faq", fid, request)
+    return row
+
+
+@router.put("/api/espace/faq/{faq_id}")
+def update_faq(faq_id: int, body: FaqIn, request: Request, user: dict = Depends(OWNER)):
+    with db.get_conn() as conn:
+        _faq_row(conn, faq_id, user["practice_id"])
+        conn.execute(
+            "UPDATE practice_faq SET question=?, answer=?, keywords=?, sort_order=? WHERE id=? AND practice_id=?",
+            (body.question.strip(), body.answer.strip(), (body.keywords or "").strip(), body.sort_order, faq_id, user["practice_id"]),
+        )
+        row = _faq_row(conn, faq_id, user["practice_id"])
+    security.audit(user["practice_id"], user["id"], "faq.update", "faq", faq_id, request)
+    return row
+
+
+@router.delete("/api/espace/faq/{faq_id}")
+def delete_faq(faq_id: int, request: Request, user: dict = Depends(OWNER)):
+    with db.get_conn() as conn:
+        _faq_row(conn, faq_id, user["practice_id"])
+        conn.execute("DELETE FROM practice_faq WHERE id=? AND practice_id=?", (faq_id, user["practice_id"]))
+    security.audit(user["practice_id"], user["id"], "faq.delete", "faq", faq_id, request)
+    return {"ok": True}

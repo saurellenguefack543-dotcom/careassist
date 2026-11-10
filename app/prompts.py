@@ -16,9 +16,12 @@ Tu réponds au téléphone et par chat, 24h/24 et 7j/7, {language_label}.
 {country_block}
 - Adresse : {address} — Accès : {access}
 - Téléphone : {phone}
+- E-mail : {email}
 - Horaires : {hours}
 - Remboursement / assurance : {insurance}
 - Tarifs : {prices}
+- Contact d'urgence du cabinet : {emergency}
+{custom_faq}
 
 # Style (réponses destinées à la VOIX)
 - 1 à 3 phrases courtes, une seule question à la fois, pas de listes ni d'émojis, pas de jargon.
@@ -65,8 +68,11 @@ def build_system_prompt(practice: dict, extra_context: str = "") -> str:
         name=practice["name"], specialty_label=spec["label"],
         appointment_types=", ".join(t["label"] for t in spec["appointment_types"]),
         address=practice["address"], access=practice.get("access") or "—", phone=practice["phone"],
+        email=practice.get("email") or "—",
         hours=practice["hours"], insurance=practice.get("insurance_note") or spec["insurance"],
         prices=practice.get("prices_note") or spec["prices"], overlay=spec["prompt_overlay"],
+        emergency=((practice.get("emergency_contact_name") or "") + " " + (practice.get("emergency_contact_phone") or "")).strip() or "—",
+        custom_faq=_custom_faq_block(practice),
         country_block=prompt_block(prof),
         language_label=("en anglais (réponds en anglais au patient)" if practice.get("language") == "en" else "en français, au vouvoiement"),
     )
@@ -74,3 +80,19 @@ def build_system_prompt(practice: dict, extra_context: str = "") -> str:
     if extra_context:
         prompt += "\n# Contexte temps réel\n" + extra_context + "\n"
     return prompt
+
+
+def _custom_faq_block(practice: dict) -> str:
+    pid = practice.get("id")
+    if not pid:
+        return ""
+    from . import db
+    with db.get_conn() as conn:
+        rows = db.rows(conn.execute(
+            "SELECT question, answer FROM practice_faq WHERE practice_id=? ORDER BY sort_order, id", (pid,)))
+    if not rows:
+        return ""
+    lines = ["# Réponses personnalisées du cabinet (à utiliser en priorité, n'invente rien d'autre)"]
+    for r in rows:
+        lines.append(f"Q : {r['question']}\nR : {r['answer']}")
+    return "\n".join(lines) + "\n"

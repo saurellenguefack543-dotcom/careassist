@@ -206,7 +206,25 @@ def update_sub(reference: str, **fields) -> None:
         conn.execute(f"UPDATE subscriptions SET {cols} WHERE reference=?", (*fields.values(), reference))
 
 
+def _downgrade_from_sub(sub: dict | None) -> None:
+    if not sub:
+        return
+    from . import plans
+    pid = sub.get("practice_id")
+    if pid:
+        plans.apply_free(int(pid))
+        return
+    if sub.get("email"):
+        with db.get_conn() as conn:
+            row = conn.execute("SELECT id FROM practices WHERE lower(email)=?", (sub["email"].lower(),)).fetchone()
+            if not row:
+                row = conn.execute("SELECT practice_id AS id FROM users WHERE lower(email)=? AND role='owner'", (sub["email"].lower(),)).fetchone()
+            if row:
+                plans.apply_free(row["id"])
+
+
 def activate(reference: str, event: str, **extra) -> bool:
+
     sub = get_sub(reference)
     if not sub:
         return False
@@ -214,6 +232,8 @@ def activate(reference: str, event: str, **extra) -> bool:
         update_sub(reference, status="active", last_event=event, **extra)
     else:
         update_sub(reference, last_event=event, **extra)
+    from . import plans
+    plans.activate_subscription_for_email(sub.get("email") or "", sub.get("practice_id"))
     return True
 
 
@@ -226,6 +246,7 @@ class CheckoutIn(BaseModel):
     email: EmailStr
     phone: str | None = Field(None, max_length=30)
     specialty: str | None = None
+    practice_id: int | None = None
 
 
 @router.get("/api/pricing")
@@ -247,12 +268,21 @@ def checkout(body: CheckoutIn, request: Request):
     ref = f"ca_{region['key'][:6]}_{uuid.uuid4().hex[:16]}"
     sub = {"reference": ref, "practice_name": body.practice_name.strip(), "email": body.email, "phone": body.phone}
     ts = db.now_iso()
+    practice_id = body.practice_id
+    if practice_id is None:
+        try:
+            from . import auth
+            user = auth.current_user(request)
+            if user:
+                practice_id = user.get("practice_id")
+        except Exception:
+            practice_id = None
     with db.get_conn() as conn:
         conn.execute(
             "INSERT INTO subscriptions(reference, region, currency, amount, provider, mode, status, practice_name, email, "
-            "phone, specialty, created_at, updated_at) VALUES (?,?,?,?,?,?, 'pending', ?,?,?,?,?,?)",
+            "phone, specialty, created_at, updated_at, practice_id) VALUES (?,?,?,?,?,?, 'pending', ?,?,?,?,?,?,?)",
             (ref, region["key"], region["currency"], region["amount"], provider.name, mode, sub["practice_name"],
-             body.email, body.phone, body.specialty, ts, ts),
+             body.email, body.phone, body.specialty, ts, ts, practice_id),
         )
     base = base_url(request)
     if mode == "mock":
@@ -389,6 +419,7 @@ async def stripe_webhook(request: Request):
         activate(ref, etype, provider_subscription_id=obj.get("subscription"))
     elif etype == "customer.subscription.deleted" and ref:
         update_sub(ref, status="cancelled", last_event=etype)
+        _downgrade_from_sub(get_sub(ref))
     elif etype == "invoice.payment_failed":
         sub_ref = ((obj.get("subscription_details") or {}).get("metadata") or {}).get("reference")
         if sub_ref:
@@ -453,4 +484,5 @@ async def paystack_webhook(request: Request):
             activate(ref, etype)
     elif etype in ("subscription.disable", "subscription.not_renew") and ref:
         update_sub(ref, status="cancelled", last_event=etype)
+        _downgrade_from_sub(get_sub(ref))
     return {"received": True}

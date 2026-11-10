@@ -11,11 +11,12 @@ Les fichiers ont été recadrés, redimensionnés et recompressés (WebP + JPG) 
 
 | Fichier | Sujet | Auteur | Source |
 |---|---|---|---|
-| `hero-reception.webp/.jpg` | Accueil d'un cabinet (réception) | Pavel Danilyuk | https://www.pexels.com/photo/the-woman-in-the-reception-counter-is-talking-to-a-man-in-white-long-sleeves-6812427/ |
-| `dentiste.webp/.jpg` | Dentiste en soins | Andrea Piacquadio | https://www.pexels.com/photo/male-dentist-working-on-woman-s-teeth-3779700/ |
+| `hero-reception.webp/.jpg` | Médecin en consultation avec un patient | cottonbro studio | https://www.pexels.com/photo/a-doctor-talking-the-patient-7579831/ |
+| `dentiste.webp/.jpg` | Dentiste en soins (Lagos) | Shedrack Salami | https://www.pexels.com/photo/a-woman-getting-her-teeth-checked-by-a-dentist-16903232/ |
 | `psychologue.webp/.jpg` | Séance chez un psychologue | Tima Miroshnichenko | https://www.pexels.com/photo/a-psychologist-talking-to-her-patient-5336963/ |
 | `ophtalmologue.webp/.jpg` | Examen ophtalmologique | Anna Shvets | https://www.pexels.com/photo/photo-of-opthalmologist-checking-on-a-patient-3846009/ |
-| `generaliste.webp/.jpg` | Consultation de médecine générale | RDNE Stock project | https://www.pexels.com/photo/woman-in-white-coat-talking-to-a-man-in-blue-robe-8313175/ |
+| `generaliste.webp/.jpg` | Consultation de médecine générale (Lagos) | Ninthgrid | https://www.pexels.com/photo/doctor-consultation-in-medical-office-in-lagos-30677597/ |
 | `kinesitherapeute.webp/.jpg` | Séance de kinésithérapie | Funkcinės Terapijos Centras | https://www.pexels.com/photo/physiotherapist-instructing-patient-20860594/ |
+| `praticien.webp/.jpg` | Médecin au cabinet | Ivan S | https://www.pexels.com/photo/a-doctor-smiling-while-leaning-on-the-table-4989168/ |
 
 Téléchargées le 10/11/2026 depuis le CDN `images.pexels.com`.

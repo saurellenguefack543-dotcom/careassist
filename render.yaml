@@ -1,12 +1,19 @@
 # Déploiement en un clic sur Render (https://render.com/docs/blueprint-spec)
 # 1. Poussez ce dépôt sur GitHub  2. Render > New > Blueprint > sélectionnez le dépôt  3. Renseignez les variables « sync: false ».
 #
-# IMPORTANT — persistance SQLite :
-#  - Plan « free » : PAS de disque persistant -> la base est recréée à chaque redéploiement/redémarrage
-#    (parfait pour une démo, inacceptable pour des données patients).
-#  - Production : passez le service en plan payant (starter+) et décommentez le bloc `disk` ci-dessous
-#    (DB_PATH et BACKUP_DIR pointent alors sur le disque), ou migrez vers PostgreSQL managé (voir README).
-#  - Données de santé en France : hébergement certifié HDS obligatoire (Render n'est pas certifié HDS).
+# IMPORTANT — base de données :
+#  - Ce Blueprint crée un PostgreSQL Render (plan free, région frankfurt) et injecte DATABASE_URL.
+#    L'instance gratuite expire au bout de 30 jours ; le plan payant est d'environ 7 USD/mois.
+#  - En local, sans DATABASE_URL, l'application utilise SQLite (DB_PATH).
+#  - Données de santé en France : hébergement certifié HDS obligatoire (OVHcloud, Scaleway…).
+#    Render n'est pas certifié HDS : ne pas y héberger de vraies données patients.
+databases:
+  - name: careassist-db
+    plan: free
+    region: frankfurt
+    databaseName: careassist
+    user: careassist
+
 services:
   - type: web
     name: careassist
@@ -20,6 +27,10 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.7
+      - key: DATABASE_URL
+        fromDatabase:
+          name: careassist-db
+          property: connectionString
       - key: PUBLIC_BASE_URL
         value: https://getcareassist.com
       - key: ADMIN_TOKEN

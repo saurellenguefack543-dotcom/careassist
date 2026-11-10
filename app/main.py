@@ -34,7 +34,7 @@ logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     db.init_db()
-    if config.env("SEED_DEMO", "1") != "0":
+    if config.env("SEED_DEMO", "1") != "0" and db.is_empty():
         seed.seed()
     scheduler.start()
     yield
@@ -271,13 +271,129 @@ def espace_page():
 def admin_practices():
     with db.get_conn() as conn:
         return db.rows(conn.execute(
-            "SELECT p.id, p.slug, p.name, p.specialty, p.country, p.timezone, p.currency, p.voip_provider, p.voip_number, p.is_demo, "
+            "SELECT p.id, p.slug, p.name, p.specialty, p.city, p.country, p.timezone, p.currency, p.voip_provider, p.voip_number, p.is_demo, p.listing_status, p.directory_visible, p.published_at, p.created_at, p.plan, p.subscription_status, p.trial_ends_at, "
             "(SELECT COUNT(*) FROM users u WHERE u.practice_id=p.id) AS users, "
             "(SELECT COUNT(*) FROM patients x WHERE x.practice_id=p.id) AS patients, "
             "(SELECT COUNT(*) FROM appointments a WHERE a.practice_id=p.id AND a.status!='cancelled') AS appointments, "
             "(SELECT COUNT(*) FROM calls c WHERE c.practice_id=p.id) AS calls, "
             "(SELECT COUNT(*) FROM notifications n WHERE n.practice_id=p.id AND n.status IN ('sent','mock_sent')) AS notifications_sent "
             "FROM practices p ORDER BY p.id"))
+
+
+
+# ------------------------------------------------------------------ annuaire public
+
+@app.get("/api/directory")
+def directory_list(specialty: str | None = None, country: str | None = None, city: str | None = None):
+    from .directory import list_published
+    return {"practices": list_published(specialty=specialty, country=country, city=city)}
+
+
+@app.get("/api/directory/{slug}")
+def directory_one(slug: str):
+    from .directory import get_published
+    item = get_published(slug)
+    if not item:
+        raise HTTPException(404, "Cabinet introuvable ou non publié")
+    return item
+
+
+@app.get("/api/directory/{slug}/logo")
+def directory_logo(slug: str):
+    from .directory import get_published
+    from .espace import _logo_file
+    item = get_published(slug)
+    if not item:
+        raise HTTPException(404, "Cabinet introuvable ou non publié")
+    p = db.get_practice(slug)
+    path = _logo_file(p["id"])
+    if not path.is_file():
+        raise HTTPException(404, "Pas de logo")
+    return FileResponse(path, media_type="image/webp")
+
+
+class DirectoryContactIn(BaseModel):
+    name: str = Field(..., min_length=2, max_length=120)
+    email: EmailStr
+    phone: str | None = Field(None, max_length=30)
+    message: str = Field(..., min_length=5, max_length=2000)
+
+
+@app.post("/api/directory/{slug}/contact", status_code=201, dependencies=[Depends(security.limiter("leads"))])
+def directory_contact(slug: str, body: DirectoryContactIn):
+    from .directory import get_published
+    item = get_published(slug)
+    if not item:
+        raise HTTPException(404, "Cabinet introuvable ou non publié")
+    with db.get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO leads(practice_name, email, phone, specialty, message, source, created_at) VALUES (?,?,?,?,?,?,?)",
+            (item["name"], body.email, body.phone or "", item.get("specialty"),
+             f"Contact annuaire — {body.name} : {body.message}", "directory", db.now_iso()),
+        )
+    return {"ok": True, "id": cur.lastrowid, "message": "Votre message a bien été transmis au cabinet."}
+
+
+@app.post("/api/admin/practices/{pid}/approve", dependencies=[Depends(admin_guard)])
+def admin_approve_listing(pid: int):
+    from . import directory
+    p = db.get_practice(pid)
+    if not p:
+        raise HTTPException(404, "Cabinet introuvable")
+    directory.publish(pid, reason="admin")
+    return {"ok": True, "listing_status": "published"}
+
+
+@app.post("/api/admin/practices/{pid}/reject", dependencies=[Depends(admin_guard)])
+def admin_reject_listing(pid: int):
+    from . import directory
+    p = db.get_practice(pid)
+    if not p:
+        raise HTTPException(404, "Cabinet introuvable")
+    directory.reject(pid)
+    return {"ok": True, "listing_status": "rejected"}
+
+
+def _public_page(name: str):
+    path = config.STATIC_DIR / name
+    if not path.exists():
+        raise HTTPException(404)
+    return FileResponse(path)
+
+
+@app.get("/fonctionnalites", include_in_schema=False)
+def page_features():
+    return _public_page("fonctionnalites.html")
+
+
+@app.get("/specialites", include_in_schema=False)
+def page_specs():
+    return _public_page("specialites.html")
+
+
+@app.get("/tarifs", include_in_schema=False)
+def page_pricing():
+    return _public_page("tarifs.html")
+
+
+@app.get("/demo", include_in_schema=False)
+def page_demo():
+    return _public_page("demo.html")
+
+
+@app.get("/faq", include_in_schema=False)
+def page_faq():
+    return _public_page("faq.html")
+
+
+@app.get("/contact", include_in_schema=False)
+def page_contact():
+    return _public_page("contact.html")
+
+
+@app.get("/cabinets", include_in_schema=False)
+def page_directory():
+    return _public_page("cabinets.html")
 
 
 app.mount("/", StaticFiles(directory=str(config.STATIC_DIR), html=True), name="static")

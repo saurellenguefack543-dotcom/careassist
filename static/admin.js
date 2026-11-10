@@ -10,13 +10,19 @@
   const fmt = iso => iso ? new Date(iso.length <= 16 ? iso + ":00" : iso).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "";
   const SPEC = { dentiste: "Dentiste", psychologue: "Psychologue", ophtalmologue: "Ophtalmologue", generaliste: "Généraliste", kinesitherapeute: "Kiné" };
   let tab = "conversations";
+  const headers = () => token ? { "X-Admin-Token": token } : {};
   const get = async path => {
-    const r = await fetch(API + path, { headers: token ? { "X-Admin-Token": token } : {} });
+    const r = await fetch(API + path, { headers: headers() });
     if (r.status === 401) {
       const t = prompt("Jeton super-admin (ADMIN_TOKEN) :");
       if (t) { sessionStorage.setItem("ca_admin_token", t); token = t; return get(path); }
       throw new Error("Accès refusé : jeton super-admin requis (variable ADMIN_TOKEN).");
     }
+    if (!r.ok) throw new Error("Erreur " + r.status);
+    return r.json();
+  };
+  const post = async path => {
+    const r = await fetch(API + path, { method: "POST", headers: headers() });
     if (!r.ok) throw new Error("Erreur " + r.status);
     return r.json();
   };
@@ -72,9 +78,18 @@
   }
   async function practices() {
     const rows = await get("/api/admin/practices");
-    $("#panel").innerHTML = `<table><thead><tr><th>Cabinet</th><th>Spécialité</th><th>Pays</th><th>Fuseau</th><th>VoIP</th><th>Comptes</th><th>Patients</th><th>RDV</th><th>Appels</th><th>Notifications</th></tr></thead><tbody>${
-      rows.map(r => `<tr><td>${esc(r.name)} ${r.is_demo ? '<span class="badge b-mock">Démo</span>' : ""}</td><td>${esc(SPEC[r.specialty] || r.specialty)}</td><td>${esc(r.country)} · ${esc(r.currency)}</td><td>${esc(r.timezone)}</td><td>${esc(r.voip_provider)}<br><small>${esc(r.voip_number || "—")}</small></td><td>${r.users}</td><td>${r.patients}</td><td>${r.appointments}</td><td>${r.calls}</td><td>${r.notifications_sent}</td></tr>`).join("")
-    }</tbody></table><p class="note">Vue super-admin : volumes uniquement. Les données patients restent dans l'espace de chaque cabinet.</p>`;
+    const st = x => x === "published" ? '<span class="badge b-ok">Publié</span>' : x === "rejected" ? '<span class="badge b-cancel">Refusé</span>'
+      : x === "pending" ? '<span class="badge b-pending">En attente</span>' : `<span class="badge">${esc(x || "—")}</span>`;
+    const plan = r => r.subscription_status === "active" || r.plan === "premium" ? '<span class="badge b-ok">Premium</span>' : r.subscription_status === "trialing" ? '<span class="badge b-pending">Essai</span>' : '<span class="badge">Gratuit</span>';
+    $("#panel").innerHTML = `<table><thead><tr><th>Cabinet</th><th>Spécialité</th><th>Pays</th><th>Annuaire</th><th>Forfait</th><th>Comptes</th><th>Patients</th><th>RDV</th><th>Action</th></tr></thead><tbody>${
+      rows.map(r => `<tr><td>${esc(r.name)} ${r.is_demo ? '<span class="badge b-mock">Démo</span>' : ""}</td><td>${esc(SPEC[r.specialty] || r.specialty)}</td><td>${esc(r.country)}${r.city ? " · " + esc(r.city) : ""}</td><td>${st(r.listing_status)}${r.directory_visible ? "" : ' <span class="badge">masqué</span>'}</td><td>${plan(r)}</td><td>${r.users}</td><td>${r.patients}</td><td>${r.appointments}</td><td>${
+        r.listing_status === "pending" || r.listing_status === "rejected"
+          ? `<button class="btn btn-primary btn-sm" data-approve="${r.id}">Publier</button> `
+          : ""
+      }${r.listing_status !== "rejected" ? `<button class="btn-ghost small" data-reject="${r.id}">Refuser</button>` : ""}</td></tr>`).join("")
+    }</tbody></table><p class="note">Vue super-admin : volumes uniquement. Les données patients restent dans l'espace de chaque cabinet. Une fiche en attente est publiée automatiquement au bout de 48 h si personne n'intervient.</p>`;
+    document.querySelectorAll("[data-approve]").forEach(b => b.addEventListener("click", async () => { await post("/api/admin/practices/" + b.dataset.approve + "/approve"); refresh(); }));
+    document.querySelectorAll("[data-reject]").forEach(b => b.addEventListener("click", async () => { await post("/api/admin/practices/" + b.dataset.reject + "/reject"); refresh(); }));
   }
   const views = { conversations, appointments, emergencies, leads, subscriptions, practices };
   async function refresh() {
