@@ -642,8 +642,9 @@ Voici ce que je n'ai pas encore traité, ou seulement en partie :
 
 Je recherche un poste en systèmes, réseaux et cybersécurité, en Île-de-France.
 
-LinkedIn : _à compléter_
+LinkedIn :
 
-Contact du projet : saurellenguefack543@gmail.com · 06 05 50 85 42 · https://getcareassist.com
+
+un service de Contact du projet : saurellenguefack543@gmail.com · 06 05 50 85 42 · https://getcareassist.com
 
 Crédits photos : voir `static/img/CREDITS.md` (Pexels, licence Pexels).
